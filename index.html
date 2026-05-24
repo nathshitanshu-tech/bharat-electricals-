@@ -1,0 +1,2041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#0f1f3d"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Bharat Electricals"/>
+<title>Bharat Electricals</title>
+
+<!-- PWA Manifest inline -->
+<script>
+const manifestData = {
+  name: "Bharat Electricals Billing",
+  short_name: "BE Billing",
+  description: "GST Billing & Inventory Management",
+  start_url: "./",
+  display: "standalone",
+  background_color: "#f4f0e8",
+  theme_color: "#0f1f3d",
+  orientation: "portrait-primary",
+  icons: [
+    { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%230f1f3d'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle' fill='%23f59e0b'%3E⚡%3C/text%3E%3C/svg%3E", sizes: "192x192", type: "image/svg+xml" },
+    { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%230f1f3d'/%3E%3Ctext x='256' y='360' font-size='280' text-anchor='middle' fill='%23f59e0b'%3E⚡%3C/text%3E%3C/svg%3E", sizes: "512x512", type: "image/svg+xml" }
+  ]
+};
+const blob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
+const manifestURL = URL.createObjectURL(blob);
+document.write('<link rel="manifest" href="' + manifestURL + '"/>');
+</script>
+
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%230f1f3d'/%3E%3Ctext x='90' y='125' font-size='95' text-anchor='middle' fill='%23f59e0b'%3E⚡%3C/text%3E%3C/svg%3E"/>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body,#root{height:100%;width:100%;overflow:hidden;}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f4f0e8;overscroll-behavior:none;}
+input,select,textarea{font-family:inherit;-webkit-appearance:none;appearance:none;}
+button{font-family:inherit;-webkit-appearance:none;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.2);border-radius:4px;}
+
+/* Smooth scrolling for main content */
+.scroll-area{-webkit-overflow-scrolling:touch;overflow-y:auto;}
+
+/* Safe area insets for iPhone X+ */
+.safe-top{padding-top:env(safe-area-inset-top);}
+.safe-bottom{padding-bottom:env(safe-area-inset-bottom);}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.fade-in{animation:fadeIn .2s ease-out;}
+.spin{animation:spin 1s linear infinite;}
+
+/* Print styles */
+@media print{
+  #app-shell{display:none!important;}
+  #print-frame{display:block!important;}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+// ── SHOP ──────────────────────────────────────────────────────────────
+const SHOP = {
+  name: "Bharat Electricals",
+  gstin: "10BVYPP8649G1ZW",
+  address: "Bakhri Bus Stand, Near HP Petrol Pump",
+  city: "Khagaria - 851204, Bihar",
+  phones: ["9570716121", "7352406505"],
+  state: "Bihar",
+  stateCode: "10",
+};
+
+// ── THEME ─────────────────────────────────────────────────────────────
+const C = {
+  navy:"#0f1f3d", navyL:"#1a3460", saffron:"#d97706",
+  saffronL:"#f59e0b", bg:"#f4f0e8", card:"#ffffff",
+  text:"#1c1917", muted:"#78716c", border:"#e7e2d9",
+  green:"#059669", red:"#dc2626", purple:"#7c3aed", blue:"#2563eb",
+};
+
+// ── SEED PRODUCTS ─────────────────────────────────────────────────────
+const INIT_PRODUCTS = [
+  {id:"p1",name:"LED Bulb 9W",hsn:"94054090",unit:"Pcs",rate:85,gstRate:12,costPrice:55,stock:50},
+  {id:"p2",name:"LED Bulb 15W",hsn:"94054090",unit:"Pcs",rate:120,gstRate:12,costPrice:80,stock:40},
+  {id:"p3",name:"LED Tube Light 20W",hsn:"94054090",unit:"Pcs",rate:220,gstRate:12,costPrice:150,stock:30},
+  {id:"p4",name:"MCB 6A (SP)",hsn:"85362000",unit:"Pcs",rate:180,gstRate:18,costPrice:120,stock:25},
+  {id:"p5",name:"MCB 32A (SP)",hsn:"85362000",unit:"Pcs",rate:220,gstRate:18,costPrice:150,stock:20},
+  {id:"p6",name:"RCCB 25A",hsn:"85362000",unit:"Pcs",rate:850,gstRate:18,costPrice:580,stock:10},
+  {id:"p7",name:"Copper Wire 1.5mm",hsn:"85446090",unit:"Mtr",rate:22,gstRate:18,costPrice:15,stock:500},
+  {id:"p8",name:"Copper Wire 2.5mm",hsn:"85446090",unit:"Mtr",rate:35,gstRate:18,costPrice:24,stock:400},
+  {id:"p9",name:"Copper Wire 4mm",hsn:"85446090",unit:"Mtr",rate:55,gstRate:18,costPrice:38,stock:300},
+  {id:"p10",name:"Modular Switch 6A",hsn:"85362090",unit:"Pcs",rate:45,gstRate:18,costPrice:28,stock:100},
+  {id:"p11",name:"Modular Socket 6A",hsn:"85362090",unit:"Pcs",rate:55,gstRate:18,costPrice:35,stock:100},
+  {id:"p12",name:"Fan Regulator",hsn:"85369090",unit:"Pcs",rate:150,gstRate:18,costPrice:95,stock:30},
+  {id:"p13",name:"Ceiling Fan 1200mm",hsn:"84145100",unit:"Pcs",rate:1800,gstRate:18,costPrice:1200,stock:15},
+  {id:"p14",name:'Exhaust Fan 6"',hsn:"84145990",unit:"Pcs",rate:850,gstRate:18,costPrice:560,stock:12},
+  {id:"p15",name:"LED Street Light 30W",hsn:"94054090",unit:"Pcs",rate:1200,gstRate:12,costPrice:800,stock:8},
+];
+
+// ── HELPERS ───────────────────────────────────────────────────────────
+const fmt = n => new Intl.NumberFormat("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0);
+const fmtI = n => new Intl.NumberFormat("en-IN").format(n||0);
+const today = () => new Date().toISOString().split("T")[0];
+const uid = () => Math.random().toString(36).slice(2,9);
+
+const ONES=["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
+const TENS=["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+function n2w(n){n=Math.floor(n);if(!n)return"Zero";if(n<20)return ONES[n];if(n<100)return TENS[~~(n/10)]+(n%10?" "+ONES[n%10]:"");if(n<1000)return ONES[~~(n/100)]+" Hundred"+(n%100?" "+n2w(n%100):"");if(n<1e5)return n2w(~~(n/1000))+" Thousand"+(n%1000?" "+n2w(n%1000):"");if(n<1e7)return n2w(~~(n/1e5))+" Lakh"+(n%1e5?" "+n2w(n%1e5):"");return n2w(~~(n/1e7))+" Crore"+(n%1e7?" "+n2w(n%1e7):"");}
+const rupWords = a => {const r=~~a,p=Math.round((a-r)*100);return"Rupees "+n2w(r)+(p?" and "+n2w(p)+" Paise":"")+" Only";};
+
+function getFY(){const n=new Date(),y=n.getFullYear();return n.getMonth()>=3?`${y}-${String(y+1).slice(2)}`:`${y-1}-${String(y).slice(2)}`;}
+function nextNo(invs){const pre=`BE/${getFY()}/`;const nums=invs.filter(i=>i.no.startsWith(pre)).map(i=>parseInt(i.no.slice(pre.length))||0);return pre+String((nums.length?Math.max(...nums):0)+1).padStart(3,"0");}
+function calcItem(it){const taxable=(+it.qty||0)*(+it.rate||0);const gstAmt=taxable*(+it.gstRate||0)/100;return{...it,taxable,gstAmt,lineTotal:taxable+gstAmt};}
+function calcAll(items){const c=items.map(calcItem);return{items:c,subtotal:c.reduce((s,i)=>s+i.taxable,0),totalGst:c.reduce((s,i)=>s+i.gstAmt,0),grandTotal:c.reduce((s,i)=>s+i.lineTotal,0)};}
+function newLine(){return{id:uid(),name:"",hsn:"",unit:"Pcs",qty:1,rate:0,gstRate:18};}
+const MONTH_NAMES=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MONTH_SHORT=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+async function fileToBase64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});}
+
+function fuzzyMatch(target,products){
+  const t=target.toLowerCase().replace(/[^a-z0-9]/g," ").trim();
+  let best=null,score=0;
+  for(const p of products){
+    const n=p.name.toLowerCase().replace(/[^a-z0-9]/g," ").trim();
+    const words=t.split(" ").filter(Boolean);
+    let s=words.filter(w=>n.includes(w)).length/Math.max(words.length,1);
+    if(s>score){score=s;best=p;}
+  }
+  return score>0.4?best:null;
+}
+
+// ── STORAGE ───────────────────────────────────────────────────────────
+const db = {
+  get:(k)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}},
+  set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}},
+  del:(k)=>{try{localStorage.removeItem(k);}catch{}},
+};
+
+// ── AUTH REMOVED — no login required ──────────────────────────────────
+
+// ── PRINT ─────────────────────────────────────────────────────────────
+function doPrint(inv){
+  const{items,subtotal,totalGst,grandTotal,isInterstate,customer,no,date,notes,discountPct,discountAmt,payMethod,paidAmt,status}=inv;
+  const gstSum={};
+  items.forEach(it=>{if(!gstSum[it.gstRate])gstSum[it.gstRate]={taxable:0,gst:0};gstSum[it.gstRate].taxable+=it.taxable;gstSum[it.gstRate].gst+=it.gstAmt;});
+  const dateStr=new Date(date).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
+  const colSpan=isInterstate?8:9;
+  const payLabel={"cash":"Cash","upi":"UPI / QR","card":"Card","bank":"Bank Transfer","credit":"Credit / Khata"}[payMethod]||payMethod||"Cash";
+  const rawSubtotal=subtotal+(discountAmt||0);
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Invoice ${no}</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:11px;color:#111;background:#fff}
+.page{width:210mm;min-height:297mm;padding:10mm;margin:0 auto}
+.top{display:flex;align-items:center;gap:12px;border:2px solid #0f1f3d;padding:10px 14px;margin-bottom:0}
+.logo{font-size:28px}.company{flex:1}.cn{font-size:16px;font-weight:bold;color:#0f1f3d;letter-spacing:1px}
+.ca{font-size:11px;color:#555;margin-top:2px}.cp{font-size:11px;font-weight:600;margin-top:2px}
+.cg{font-size:11px;color:#888;font-family:monospace}.title{background:#0f1f3d;color:#fff;text-align:center;padding:6px;font-size:13px;font-weight:bold;letter-spacing:3px}
+.flex{display:flex}.col{flex:1}.box{border:1px solid #bbb;padding:8px;border-top:none}
+.label{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;font-weight:600}
+.meta{display:flex;justify-content:space-between;background:#f5f1ea;border:1px solid #bbb;border-top:none;padding:5px 10px;font-size:11px;margin-bottom:8px}
+table{width:100%;border-collapse:collapse}
+th{background:#0f1f3d;color:#fff;padding:5px 4px;font-size:10px;border:1px solid #555;text-align:center}
+td{padding:4px 5px;border:1px solid #ddd;font-size:10px;vertical-align:top}
+.r{text-align:right}.c{text-align:center}.l{text-align:left}.grand{background:#0f1f3d;color:#fff;font-weight:bold;font-size:12px}
+.words{padding:5px 8px;border:1px solid #ddd;border-top:none;font-style:italic;background:#fffbf5;font-size:10px}
+.footer{display:flex;justify-content:space-between;align-items:flex-end;margin-top:20px;padding-top:8px;border-top:1px solid #ddd}
+.sigline{width:130px;border-top:1px solid #333;margin:26px 0 4px auto}
+@media print{body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}</style>
+</head><body><div class="page">
+<div class="top"><div class="logo">⚡</div><div class="company">
+<div class="cn">${SHOP.name}</div>
+<div class="ca">${SHOP.address}, ${SHOP.city}</div>
+<div class="cp">Ph: ${SHOP.phones.join(" | ")}</div>
+<div class="cg">GSTIN: ${SHOP.gstin} | State: ${SHOP.state} (${SHOP.stateCode})</div>
+</div></div>
+<div class="title">GST TAX INVOICE</div>
+<div class="flex">
+<div class="col box" style="border-right:none">
+<div class="label">Bill To / Buyer</div>
+<div style="font-weight:bold;font-size:13px;margin-bottom:3px">${customer.name||"Cash Customer"}</div>
+<div>${customer.address||""}</div>
+${customer.mobile?`<div><b>Mobile:</b> ${customer.mobile}</div>`:""}
+${customer.gstin?`<div><b>GSTIN:</b> <span style="font-family:monospace">${customer.gstin}</span></div>`:""}
+<div><b>State:</b> ${customer.state||"—"} ${customer.stateCode?`(${customer.stateCode})`:""}</div>
+</div>
+<div class="col box">
+<div class="label">Invoice Details</div>
+<div><b>Invoice No:</b> ${no}</div>
+<div><b>Date:</b> ${dateStr}</div>
+<div><b>Supply Type:</b> ${isInterstate?"Interstate – IGST":"Intrastate – CGST+SGST"}</div>
+<div><b>Payment:</b> ${payLabel}</div>
+</div></div>
+<div class="meta"><span><b>Reverse Charge:</b> No</span><span><b>Place of Supply:</b> ${customer.state||SHOP.state}</span></div>
+<table><thead><tr>
+<th style="width:24px">Sr</th><th class="l" style="min-width:120px">Description</th>
+<th>HSN</th><th>Unit</th><th>Qty</th><th>Rate(₹)</th><th>Taxable(₹)</th><th>GST%</th>
+${isInterstate?"<th>IGST(₹)</th>":"<th>CGST(₹)</th><th>SGST(₹)</th>"}
+<th>Total(₹)</th>
+</tr></thead><tbody>
+${items.map((it,i)=>`<tr><td class="c">${i+1}</td><td>${it.name}</td><td class="c">${it.hsn||""}</td><td class="c">${it.unit}</td><td class="c">${it.qty}</td><td class="r">${fmt(it.rate)}</td><td class="r">${fmt(it.taxable)}</td><td class="c">${it.gstRate}%</td>${isInterstate?`<td class="r">${fmt(it.gstAmt)}</td>`:`<td class="r">${fmt(it.gstAmt/2)}</td><td class="r">${fmt(it.gstAmt/2)}</td>`}<td class="r">${fmt(it.lineTotal)}</td></tr>`).join("")}
+</tbody><tfoot>
+<tr style="background:#f9f9f4;font-weight:bold"><td colspan="${colSpan}" class="r">Subtotal (Taxable Value)</td><td class="r">${fmt(rawSubtotal)}</td></tr>
+${(discountPct||0)>0?`<tr style="color:#059669"><td colspan="${colSpan}" class="r">Discount (${discountPct}%)</td><td class="r">− ${fmt(discountAmt)}</td></tr>`:""}
+${Object.entries(gstSum).map(([r,v])=>isInterstate?`<tr><td colspan="${colSpan}" class="r">IGST @ ${r}%</td><td class="r">${fmt(v.gst)}</td></tr>`:`<tr><td colspan="7" class="r">CGST @ ${r/2}%</td><td class="r">${fmt(v.gst/2)}</td><td class="r"></td><td class="r"></td></tr><tr><td colspan="7" class="r">SGST @ ${r/2}%</td><td class="r"></td><td class="r">${fmt(v.gst/2)}</td><td class="r">${fmt(v.gst)}</td></tr>`).join("")}
+<tr><td colspan="${colSpan}" class="r"><b>Total GST</b></td><td class="r"><b>${fmt(totalGst)}</b></td></tr>
+<tr class="grand"><td colspan="${colSpan}" class="r">GRAND TOTAL</td><td class="r">₹ ${fmt(grandTotal)}</td></tr>
+</tfoot></table>
+<div class="words"><b>Amount in Words:</b> ${rupWords(grandTotal)}</div>
+${notes?`<div style="padding:5px 8px;border:1px solid #ddd;border-top:none;font-size:10px"><b>Notes:</b> ${notes}</div>`:""}
+<div class="footer">
+<div>
+<div style="font-size:10px;font-weight:600;margin-bottom:3px">Terms &amp; Conditions</div>
+<div style="font-size:10px">1. Goods once sold will not be taken back.</div>
+<div style="font-size:10px">2. E. &amp; O.E. Subject to Khagaria jurisdiction only.</div>
+<div style="font-size:10px">3. Interest @ 18% p.a. on overdue payments.</div>
+<div style="font-size:10px">4. Payment due within 30 days of invoice date.</div>
+</div>
+<div style="text-align:right">
+<div style="font-size:10px;margin-bottom:2px">For <b>${SHOP.name}</b></div>
+<div class="sigline"></div>
+<div style="font-size:10px">Authorised Signatory</div>
+</div></div>
+<div style="text-align:center;color:#bbb;font-size:9px;margin-top:8px">Computer Generated Invoice — ${SHOP.name} | GSTIN: ${SHOP.gstin}</div>
+</div><script>window.onload=()=>{window.print()}<\/script></body></html>`;
+  const w=window.open("","_blank","width=950,height=750");
+  if(w){w.document.write(html);w.document.close();}
+}
+
+// ── UI PRIMITIVES ─────────────────────────────────────────────────────
+function Card({children,style={}}){return <div style={{background:C.card,borderRadius:12,boxShadow:"0 1px 4px rgba(0,0,0,0.07)",border:`1px solid ${C.border}`,...style}}>{children}</div>;}
+
+function Btn({children,onClick,variant="primary",small,style={},disabled,full}){
+  const base={border:"none",borderRadius:8,cursor:disabled?"not-allowed":"pointer",fontWeight:600,transition:"all .15s",fontSize:small?12:13,padding:small?"8px 14px":"10px 18px",opacity:disabled?0.5:1,display:"inline-flex",alignItems:"center",justifyContent:"center",gap:4,width:full?"100%":"auto",touchAction:"manipulation"};
+  const v={primary:{background:C.saffron,color:"#fff"},navy:{background:C.navy,color:"#fff"},green:{background:C.green,color:"#fff"},ghost:{background:"transparent",color:C.muted,border:`1px solid ${C.border}`},danger:{background:"#fef2f2",color:C.red,border:`1px solid #fecaca`}};
+  return <button onClick={disabled?null:onClick} style={{...base,...(v[variant]||v.primary),...style}}>{children}</button>;
+}
+
+function Input({value,onChange,placeholder,type="text",style={},readOnly,autoFocus}){
+  return <input value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} type={type} readOnly={readOnly} autoFocus={autoFocus}
+    style={{border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px",fontSize:14,outline:"none",background:"#fff",color:C.text,width:"100%",...style}}/>;
+}
+function Select({value,onChange,children,style={}}){
+  return <select value={value} onChange={e=>onChange(e.target.value)}
+    style={{border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 10px",fontSize:14,outline:"none",background:"#fff",color:C.text,width:"100%",...style}}>{children}</select>;
+}
+function Label({children}){return <label style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:"uppercase",letterSpacing:"0.06em",display:"block",marginBottom:5}}>{children}</label>;}
+function StatusBadge({status}){const m={paid:{bg:"#d1fae5",c:"#065f46",t:"Paid"},unpaid:{bg:"#fee2e2",c:"#991b1b",t:"Unpaid"},partial:{bg:"#fef3c7",c:"#92400e",t:"Partial"}};const s=m[status]||m.unpaid;return <span style={{padding:"3px 10px",borderRadius:20,background:s.bg,color:s.c,fontSize:11,fontWeight:700,whiteSpace:"nowrap"}}>{s.t}</span>;}
+function Badge({children,color="#2563eb",bg="#eff6ff"}){return <span style={{padding:"2px 8px",borderRadius:4,background:bg,color,fontSize:11,fontWeight:600}}>{children}</span>;}
+
+function Modal({title,children,onClose,width=600}){
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}}
+    onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div style={{background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:width,maxHeight:"92vh",overflowY:"auto",boxShadow:"0 -8px 40px rgba(0,0,0,0.2)"}}>
+      <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,background:"#fff",zIndex:1,borderRadius:"20px 20px 0 0"}}>
+        <span style={{fontWeight:700,fontSize:16}}>{title}</span>
+        <button onClick={onClose} style={{background:"#f1f1f1",border:"none",cursor:"pointer",fontSize:16,color:C.muted,width:30,height:30,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+      </div>
+      <div style={{padding:"16px 18px 24px"}}>{children}</div>
+    </div>
+  </div>;
+}
+
+function Spinner(){return <div style={{width:20,height:20,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%"}} className="spin"/>;}
+
+
+
+// ── AI ASSISTANT MODAL ────────────────────────────────────────────────
+function AIAssistant({invoices,products,customers,expenses,onClose}){
+  const [msgs,setMsgs]=useState([
+    {role:"assistant",content:`Namaste! 🙏 I'm your AI assistant for **${SHOP.name}**.\n\nI can help you with:\n• Sales summaries and revenue insights\n• Stock alerts and inventory queries\n• Customer payment status\n• Business performance tips\n\nWhat would you like to know?`}
+  ]);
+  const [input,setInput]=useState("");
+  const [loading,setLoading]=useState(false);
+  const bottomRef=useRef();
+
+  useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
+
+  const totalSales=invoices.reduce((s,i)=>s+i.grandTotal,0);
+  const unpaidAmt=invoices.filter(i=>i.status==="unpaid").reduce((s,i)=>s+i.grandTotal,0);
+  const lowStock=products.filter(p=>(p.stock||0)<10);
+  const now=new Date();
+  const thisMonthInvs=invoices.filter(i=>{const d=new Date(i.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
+  const monthSales=thisMonthInvs.reduce((s,i)=>s+i.grandTotal,0);
+
+  const monthExpAmt=expenses?.filter(e=>{const d=new Date(e.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).reduce((s,e)=>s+(+e.amount||0),0)||0;
+
+  const bizContext=`
+You are a helpful AI assistant for ${SHOP.name}, an electrical goods shop in Khagaria, Bihar.
+GSTIN: ${SHOP.gstin}
+Current business data:
+- Total invoices: ${invoices.length}
+- Total sales (all time): ₹${fmt(totalSales)}
+- This month sales: ₹${fmt(monthSales)} (${thisMonthInvs.length} invoices)
+- This month expenses: ₹${fmt(monthExpAmt)}
+- Outstanding dues: ₹${fmt(unpaidAmt)}
+- Total products: ${products.length}
+- Low stock items (< 10 units): ${lowStock.map(p=>p.name+"("+p.stock+")").join(", ")||"None"}
+- Total customers: ${customers.length}
+- Recent invoices (last 5): ${invoices.slice(-5).map(i=>`${i.no}: ₹${fmt(i.grandTotal)} - ${i.customer.name||"Cash"} (${i.status})`).join("; ")}
+- Top products by inventory value: ${products.sort((a,b)=>(b.stock*b.rate)-(a.stock*a.rate)).slice(0,5).map(p=>p.name+": "+p.stock+" "+p.unit+" @ ₹"+p.rate).join("; ")}
+
+Answer in a helpful, friendly manner. Keep responses concise and in simple English (you may mix Hindi words naturally). Format numbers in Indian style. Current date: ${new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}.`;
+
+  async function send(){
+    if(!input.trim()||loading)return;
+    const userMsg={role:"user",content:input.trim()};
+    setMsgs(m=>[...m,userMsg]);
+    setInput("");
+    setLoading(true);
+    try{
+      const history=msgs.map(m=>({role:m.role,content:m.content}));
+      const res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514",
+          max_tokens:1000,
+          system:bizContext,
+          messages:[...history,userMsg]
+        })
+      });
+      const data=await res.json();
+      const reply=data.content?.find(b=>b.type==="text")?.text||"Sorry, I couldn't process that. Please try again.";
+      setMsgs(m=>[...m,{role:"assistant",content:reply}]);
+    }catch(e){
+      setMsgs(m=>[...m,{role:"assistant",content:"Network error. Please check your connection and try again."}]);
+    }
+    setLoading(false);
+  }
+
+  const quickQ=["Today's sales?","Low stock items?","Outstanding dues?","This month summary","Top selling products?","Customer with highest dues?"];
+
+  function MsgBubble({msg}){
+    const isAI=msg.role==="assistant";
+    // Simple markdown: bold
+    const rendered=msg.content.replace(/\*\*(.*?)\*\*/g,"<b>$1</b>").replace(/\n/g,"<br/>");
+    return(
+      <div style={{display:"flex",justifyContent:isAI?"flex-start":"flex-end",marginBottom:12}}>
+        {isAI&&<div style={{width:30,height:30,borderRadius:"50%",background:C.navy,color:C.saffronL,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0,marginRight:8,marginTop:2}}>⚡</div>}
+        <div style={{maxWidth:"80%",background:isAI?"#fff":C.navy,color:isAI?C.text:"#fff",padding:"10px 14px",borderRadius:isAI?"4px 14px 14px 14px":"14px 4px 14px 14px",fontSize:13,lineHeight:1.5,boxShadow:"0 1px 3px rgba(0,0,0,0.08)",border:isAI?`1px solid ${C.border}`:"none"}}
+          dangerouslySetInnerHTML={{__html:rendered}}/>
+      </div>
+    );
+  }
+
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:300,display:"flex",flexDirection:"column"}}>
+      <div style={{background:"#fff",flex:1,display:"flex",flexDirection:"column",borderRadius:"20px 20px 0 0",marginTop:60,overflow:"hidden"}}>
+        {/* Header */}
+        <div style={{background:C.navy,padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:36,height:36,borderRadius:"50%",background:C.saffron,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>⚡</div>
+            <div>
+              <div style={{color:"#fff",fontWeight:700,fontSize:14}}>AI Business Assistant</div>
+              <div style={{color:C.saffronL,fontSize:11}}>Powered by Claude AI</div>
+            </div>
+          </div>
+          <button onClick={onClose} style={{background:"rgba(255,255,255,0.1)",border:"none",color:"#fff",width:32,height:32,borderRadius:"50%",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+        </div>
+
+        {/* Quick questions */}
+        <div style={{padding:"10px 12px",borderBottom:`1px solid ${C.border}`,overflowX:"auto",display:"flex",gap:6,flexShrink:0}}>
+          {quickQ.map(q=>(
+            <button key={q} onClick={()=>{setInput(q);}} style={{whiteSpace:"nowrap",background:"#f0f7ff",border:`1px solid #bfdbfe`,borderRadius:20,padding:"5px 12px",fontSize:12,color:C.blue,cursor:"pointer",fontWeight:500}}>
+              {q}
+            </button>
+          ))}
+        </div>
+
+        {/* Messages */}
+        <div className="scroll-area" style={{flex:1,padding:"14px 12px",overflowY:"auto"}}>
+          {msgs.map((m,i)=><MsgBubble key={i} msg={m}/>)}
+          {loading&&(
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+              <div style={{width:30,height:30,borderRadius:"50%",background:C.navy,color:C.saffronL,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>⚡</div>
+              <div style={{background:"#fff",border:`1px solid ${C.border}`,borderRadius:"4px 14px 14px 14px",padding:"10px 14px",display:"flex",gap:4}}>
+                {[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:C.muted,animation:`pulse 1.2s ease-in-out ${i*0.2}s infinite`}}/>)}
+              </div>
+            </div>
+          )}
+          <div ref={bottomRef}/>
+        </div>
+
+        {/* Input */}
+        <div style={{padding:"10px 12px",borderTop:`1px solid ${C.border}`,display:"flex",gap:8,alignItems:"center",background:"#fff",paddingBottom:`calc(10px + env(safe-area-inset-bottom))`}}>
+          <input value={input} onChange={e=>setInput(e.target.value)}
+            onKeyDown={e=>{if(e.key==="Enter")send();}}
+            placeholder="Ask anything about your business…"
+            style={{flex:1,border:`1px solid ${C.border}`,borderRadius:24,padding:"10px 16px",fontSize:14,outline:"none",background:"#f9f9f9"}}/>
+          <button onClick={send} disabled={!input.trim()||loading}
+            style={{width:40,height:40,borderRadius:"50%",background:C.navy,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:C.saffronL,fontSize:18,flexShrink:0,opacity:(!input.trim()||loading)?0.5:1}}>
+            ➤
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SCAN BILL MODAL ───────────────────────────────────────────────────
+function ScanBillModal({products,onClose,onApply}){
+  const [stage,setStage]=useState("upload");
+  const [extracted,setExtracted]=useState(null);
+  const [reviewItems,setReviewItems]=useState([]);
+  const [error,setError]=useState("");
+  const fileRef=useRef();
+
+  async function handleFile(file){
+    if(!file)return;
+    setStage("scanning");setError("");
+    try{
+      const base64=await fileToBase64(file);
+      const mt=file.type||"image/jpeg";
+      const isImg=mt.startsWith("image/");
+      const contentBlock=isImg
+        ?{type:"image",source:{type:"base64",media_type:mt,data:base64}}
+        :{type:"document",source:{type:"base64",media_type:"application/pdf",data:base64}};
+      const res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514",
+          max_tokens:1000,
+          messages:[{role:"user",content:[
+            contentBlock,
+            {type:"text",text:`This is a purchase/supplier bill for an electrical goods shop. Extract all purchased items.
+Return ONLY valid JSON (no markdown, no extra text):
+{"supplier":"name or empty","date":"YYYY-MM-DD or empty","items":[{"name":"exact item name","qty":1,"unit":"Pcs","rate":0}]}
+For qty and rate use numbers only. If qty or rate not clear, use 1 and 0.`}
+          ]}]
+        })
+      });
+      const d=await res.json();
+      const txt=d.content?.find(b=>b.type==="text")?.text||"{}";
+      const clean=txt.replace(/```json|```/g,"").trim();
+      const parsed=JSON.parse(clean);
+      setExtracted(parsed);
+      const mapped=(parsed.items||[]).map(it=>({
+        ...it,id:uid(),matched:fuzzyMatch(it.name,products),selected:true,addStock:it.qty,newCost:it.rate
+      }));
+      setReviewItems(mapped);
+      setStage("review");
+    }catch(e){
+      setError("Could not read bill. Please ensure the image is clear. Error: "+e.message);
+      setStage("upload");
+    }
+  }
+
+  function apply(){onApply(reviewItems.filter(r=>r.selected));onClose();}
+
+  return(
+    <Modal title="📷 Scan Purchase Bill" onClose={onClose}>
+      {stage==="upload"&&(
+        <div style={{textAlign:"center",padding:"16px 0"}}>
+          <div style={{fontSize:48,marginBottom:12}}>📄</div>
+          <p style={{color:C.muted,marginBottom:20,fontSize:14,lineHeight:1.5}}>Upload a photo of your supplier's purchase bill.<br/>AI will read and extract all items automatically.</p>
+          {error&&<div style={{background:"#fef2f2",color:C.red,padding:"10px 14px",borderRadius:8,marginBottom:16,fontSize:13}}>{error}</div>}
+          <input ref={fileRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>handleFile(e.target.files[0])}/>
+          <Btn full onClick={()=>fileRef.current.click()}>📁 Choose Bill Image / PDF</Btn>
+          <p style={{color:C.muted,fontSize:11,marginTop:10}}>Supports JPG, PNG, PDF — Clear photo works best</p>
+        </div>
+      )}
+      {stage==="scanning"&&(
+        <div style={{textAlign:"center",padding:"32px 0"}}>
+          <div style={{fontSize:40,marginBottom:16}}>⚙️</div>
+          <div style={{fontSize:15,fontWeight:600,color:C.navy,marginBottom:8}}>Reading bill with AI…</div>
+          <div style={{color:C.muted,fontSize:13}}>Extracting item names, quantities and rates</div>
+        </div>
+      )}
+      {stage==="review"&&(
+        <div>
+          {extracted?.supplier&&<div style={{marginBottom:12,padding:"8px 12px",background:"#f0f9ff",borderRadius:8,fontSize:13}}><b>Supplier:</b> {extracted.supplier} {extracted.date&&`| Date: ${extracted.date}`}</div>}
+          <p style={{color:C.muted,fontSize:13,marginBottom:12}}>Review items. Uncheck any you don't want to add.</p>
+          {reviewItems.map((ri,idx)=>(
+            <div key={ri.id} style={{background:ri.selected?"#fff":"#f9f9f9",border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",marginBottom:8}}>
+              <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                <input type="checkbox" checked={ri.selected} onChange={e=>setReviewItems(r=>r.map((x,i)=>i===idx?{...x,selected:e.target.checked}:x))} style={{width:18,height:18,marginTop:2,flexShrink:0}}/>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:600,fontSize:13,marginBottom:6}}>{ri.name}</div>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    <div style={{flex:1,minWidth:100}}>
+                      <div style={{fontSize:10,color:C.muted,marginBottom:3}}>ADD QTY</div>
+                      <input type="number" value={ri.addStock} min={0}
+                        onChange={e=>setReviewItems(r=>r.map((x,i)=>i===idx?{...x,addStock:+e.target.value}:x))}
+                        style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:6,padding:"6px 8px",fontSize:13}}/>
+                    </div>
+                    <div style={{flex:1,minWidth:100}}>
+                      <div style={{fontSize:10,color:C.muted,marginBottom:3}}>COST PRICE ₹</div>
+                      <input type="number" value={ri.newCost} min={0}
+                        onChange={e=>setReviewItems(r=>r.map((x,i)=>i===idx?{...x,newCost:+e.target.value}:x))}
+                        style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:6,padding:"6px 8px",fontSize:13}}/>
+                    </div>
+                  </div>
+                  <div style={{marginTop:8}}>
+                    <div style={{fontSize:10,color:C.muted,marginBottom:3}}>MATCH TO PRODUCT</div>
+                    <select value={ri.matched?.id||""} onChange={e=>setReviewItems(r=>r.map((x,i)=>i===idx?{...x,matched:products.find(p=>p.id===e.target.value)||null}:x))}
+                      style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:6,padding:"6px 8px",fontSize:12,background:"#fff"}}>
+                      <option value="">— New Product —</option>
+                      {products.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+          {reviewItems.length===0&&<div style={{padding:24,textAlign:"center",color:C.muted}}>No items extracted. Try with a clearer image.</div>}
+          <div style={{display:"flex",gap:8,marginTop:16}}>
+            <Btn variant="ghost" onClick={()=>setStage("upload")} style={{flex:1}}>← Re-scan</Btn>
+            <Btn variant="green" onClick={apply} disabled={!reviewItems.some(r=>r.selected)} style={{flex:1}}>
+              ✅ Apply ({reviewItems.filter(r=>r.selected).length})
+            </Btn>
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────
+function Dashboard({invoices,products,customers,expenses,setView,setViewInv}){
+  const totalSales=invoices.reduce((s,i)=>s+i.grandTotal,0);
+  const totalPaid=invoices.filter(i=>i.status==="paid").reduce((s,i)=>s+i.grandTotal,0);
+  const totalUnpaid=invoices.filter(i=>i.status==="unpaid").reduce((s,i)=>s+i.grandTotal,0);
+  const lowStock=products.filter(p=>(p.stock||0)<10);
+  const recent=[...invoices].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,8);
+  const now=new Date();
+  const thisMonth=invoices.filter(i=>{const d=new Date(i.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
+  const monthSales=thisMonth.reduce((s,i)=>s+i.grandTotal,0);
+  const todayStr=today();
+  const todayInv=invoices.filter(i=>i.date===todayStr);
+  const todaySales=todayInv.reduce((s,i)=>s+i.grandTotal,0);
+
+  const todayExpenses=expenses.filter(e=>e.date===todayStr).reduce((s,e)=>s+(+e.amount||0),0);
+  const monthExpenses=expenses.filter(e=>{const d=new Date(e.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).reduce((s,e)=>s+(+e.amount||0),0);
+  const totalDue=customers.map(c=>invoices.filter(i=>i.customer?.mobile===c.mobile&&i.status!=="paid").reduce((s,i)=>s+(i.grandTotal-(i.paidAmt||0)),0)).reduce((a,b)=>a+b,0);
+
+  const stats=[
+    {icon:"🌅",label:"Today Sales",value:`₹${fmt(todaySales)}`,sub:`${todayInv.length} bills`,color:C.saffron},
+    {icon:"📅",label:"This Month",value:`₹${fmt(monthSales)}`,sub:`${thisMonth.length} bills`,color:C.blue},
+    {icon:"✅",label:"Received",value:`₹${fmt(totalPaid)}`,color:C.green},
+    {icon:"⏳",label:"Outstanding",value:`₹${fmt(totalUnpaid)}`,color:C.red},
+    {icon:"💸",label:"Month Expense",value:`₹${fmt(monthExpenses)}`,color:C.purple},
+    {icon:"📒",label:"Total Dues",value:`₹${fmt(totalDue)}`,color:totalDue>0?C.red:C.green},
+  ];
+
+  return(
+    <div className="scroll-area" style={{flex:1,overflowY:"auto",padding:"16px 14px 80px"}}>
+      {/* Greeting */}
+      <div style={{marginBottom:18}}>
+        <div style={{fontSize:18,fontWeight:700,color:C.text}}>Namaste Ji 👋</div>
+        <div style={{fontSize:13,color:C.muted,marginTop:2}}>{now.toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long"})}</div>
+      </div>
+
+      {/* Total Sales Hero */}
+      <div style={{background:`linear-gradient(135deg, ${C.navy}, ${C.navyL})`,borderRadius:16,padding:"20px 18px",marginBottom:16,boxShadow:"0 4px 16px rgba(15,31,61,0.2)"}}>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.55)",fontWeight:600,letterSpacing:1,marginBottom:4}}>TOTAL SALES — ALL TIME</div>
+        <div style={{fontSize:30,fontWeight:800,color:"#fff",marginBottom:4}}>₹{fmt(totalSales)}</div>
+        <div style={{fontSize:12,color:C.saffronL}}>{invoices.length} invoices • FY {getFY()}</div>
+      </div>
+
+      {/* Stats Grid */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+        {stats.map(s=>(
+          <Card key={s.label} style={{padding:"14px 14px",borderLeft:`4px solid ${s.color}`}}>
+            <div style={{fontSize:20,marginBottom:4}}>{s.icon}</div>
+            <div style={{fontSize:16,fontWeight:700,color:s.color}}>{s.value}</div>
+            <div style={{fontSize:11,color:C.muted,marginTop:2}}>{s.label}</div>
+            {s.sub&&<div style={{fontSize:10,color:C.muted}}>{s.sub}</div>}
+          </Card>
+        ))}
+      </div>
+
+      {/* Quick Actions */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:16}}>
+        {[
+          {icon:"➕",label:"New Bill",v:"new-invoice",color:C.saffron},
+          {icon:"📒",label:"Khata",v:"khata",color:C.red},
+          {icon:"💸",label:"Expense",v:"expenses",color:C.purple},
+          {icon:"📈",label:"P&L",v:"pnl",color:C.green},
+          {icon:"📦",label:"Stock",v:"stock",color:C.blue},
+          {icon:"👥",label:"Customers",v:"customers",color:C.navy},
+          {icon:"🔌",label:"Products",v:"products",color:C.muted},
+          {icon:"⚙️",label:"Settings",v:"settings",color:C.text},
+        ].map(a=>(
+          <button key={a.v} onClick={()=>setView(a.v)}
+            style={{background:"#fff",border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 8px",cursor:"pointer",textAlign:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
+            <div style={{fontSize:20,marginBottom:4}}>{a.icon}</div>
+            <div style={{fontSize:10,fontWeight:600,color:C.text}}>{a.label}</div>
+          </button>
+        ))}
+      </div>
+
+      {/* Low Stock Alert */}
+      {lowStock.length>0&&(
+        <Card style={{padding:"14px 16px",marginBottom:16,borderLeft:`4px solid ${C.red}`}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <div style={{fontWeight:700,fontSize:14,color:C.red}}>⚠️ Low Stock ({lowStock.length})</div>
+            <button onClick={()=>setView("stock")} style={{background:"none",border:"none",color:C.blue,fontSize:12,cursor:"pointer",fontWeight:600}}>Manage →</button>
+          </div>
+          {lowStock.slice(0,4).map(p=>(
+            <div key={p.id} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}>
+              <span style={{color:C.text}}>{p.name}</span>
+              <span style={{fontWeight:700,color:(p.stock||0)===0?C.red:C.saffron}}>{p.stock||0} {p.unit}</span>
+            </div>
+          ))}
+          {lowStock.length>4&&<div style={{fontSize:11,color:C.muted,paddingTop:6}}>+{lowStock.length-4} more items low</div>}
+        </Card>
+      )}
+
+      {/* Recent Invoices */}
+      <Card>
+        <div style={{padding:"12px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontWeight:700,fontSize:14}}>Recent Invoices</span>
+          <button onClick={()=>setView("invoices")} style={{background:"none",border:"none",color:C.blue,fontSize:12,cursor:"pointer",fontWeight:600}}>View All →</button>
+        </div>
+        {recent.length===0
+          ?<div style={{padding:28,textAlign:"center",color:C.muted}}>
+              <div style={{fontSize:32,marginBottom:8}}>🧾</div>
+              <div style={{marginBottom:12,fontSize:13}}>No invoices yet</div>
+              <Btn onClick={()=>setView("new-invoice")}>Create First Invoice</Btn>
+            </div>
+          :<div>{recent.map(inv=>(
+            <div key={inv.id} onClick={()=>{setViewInv(inv);setView("view-invoice")}}
+              style={{padding:"12px 14px",borderBottom:`1px solid ${C.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div>
+                <div style={{fontWeight:700,color:C.navy,fontSize:13}}>{inv.no}</div>
+                <div style={{fontSize:12,color:C.muted}}>{inv.customer.name||"Cash"} • {new Date(inv.date).toLocaleDateString("en-IN")}</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontWeight:700,fontSize:13}}>₹{fmt(inv.grandTotal)}</div>
+                <StatusBadge status={inv.status}/>
+              </div>
+            </div>
+          ))}</div>
+        }
+      </Card>
+    </div>
+  );
+}
+
+// ── NEW INVOICE ───────────────────────────────────────────────────────
+function NewInvoice({invoices,products,customers,saveInv,saveProd,saveCust,setView}){
+  const [customer,setCustomer]=useState({name:"",mobile:"",address:"",state:"Bihar",stateCode:"10",gstin:""});
+  const [date,setDate]=useState(today());
+  const [items,setItems]=useState([newLine()]);
+  const [isInterstate,setIsInterstate]=useState(false);
+  const [payMethod,setPayMethod]=useState("cash");
+  const [status,setStatus]=useState("unpaid");
+  const [paidAmt,setPaidAmt]=useState(0);
+  const [notes,setNotes]=useState("");
+  const [discountPct,setDiscountPct]=useState(0);
+  const [showCustSearch,setShowCustSearch]=useState(false);
+  const [custQ,setCustQ]=useState("");
+  const [saving,setSaving]=useState(false);
+  const [aiSuggest,setAiSuggest]=useState(false);
+  const [aiInput,setAiInput]=useState("");
+  const [aiLoading,setAiLoading]=useState(false);
+
+  const calc=calcAll(items);
+  const rawSubtotal=calc.subtotal;
+  const discountAmt=(rawSubtotal*(+discountPct||0)/100);
+  const finalSubtotal=rawSubtotal-discountAmt;
+  const finalGrandTotal=finalSubtotal+calc.totalGst;
+  const gstSum={};
+  calc.items.forEach(it=>{if(!gstSum[it.gstRate])gstSum[it.gstRate]={taxable:0,gst:0};gstSum[it.gstRate].taxable+=it.taxable;gstSum[it.gstRate].gst+=it.gstAmt;});
+
+  function updateItem(id,field,val){setItems(its=>its.map(it=>it.id===id?{...it,[field]:val}:it));}
+  function pickProduct(id,prod){
+    setItems(its=>its.map(it=>it.id===id?{...it,name:prod.name,hsn:prod.hsn,unit:prod.unit,rate:prod.rate,gstRate:prod.gstRate}:it));
+  }
+  function removeItem(id){if(items.length>1)setItems(its=>its.filter(it=>it.id!==id));}
+  function addLine(){setItems(its=>[...its,newLine()]);}
+
+  function pickCustomer(c){
+    setCustomer({name:c.name,mobile:c.mobile,address:c.address||"",state:c.state||"Bihar",stateCode:c.stateCode||"10",gstin:c.gstin||""});
+    setIsInterstate((c.state||"Bihar")!=="Bihar");
+    setShowCustSearch(false);
+  }
+
+  async function saveInvoice(){
+    if(!items.some(it=>it.name)){alert("Add at least one item.");return;}
+    setSaving(true);
+    const calcItems=calcAll(items);
+    const inv={
+      id:uid(),no:nextNo(invoices),date,createdAt:new Date().toISOString(),
+      customer,isInterstate,payMethod,status,paidAmt:+paidAmt,notes,
+      discountPct:+discountPct,discountAmt,
+      items:calcItems.items,subtotal:calcItems.subtotal-discountAmt,
+      totalGst:calcItems.totalGst,grandTotal:finalGrandTotal,
+    };
+    // Update stock
+    const updatedProd=products.map(p=>{
+      const used=calcItems.items.filter(it=>it.name===p.name).reduce((s,it)=>s+(+it.qty||0),0);
+      return used>0?{...p,stock:Math.max(0,(p.stock||0)-used)}:p;
+    });
+    // Save customer if new
+    if(customer.name&&customer.mobile){
+      const exists=customers.find(c=>c.mobile===customer.mobile);
+      if(!exists)saveCust([...customers,{id:uid(),...customer,createdAt:new Date().toISOString()}]);
+    }
+    saveInv([...invoices,inv]);
+    saveProd(updatedProd);
+    setSaving(false);
+    setView("invoices");
+  }
+
+  // AI item suggestion
+  async function aiSuggestItems(){
+    if(!aiInput.trim())return;
+    setAiLoading(true);
+    try{
+      const prodList=products.map(p=>`${p.name} (₹${p.rate}, GST ${p.gstRate}%, HSN: ${p.hsn})`).join("\n");
+      const res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514",
+          max_tokens:600,
+          messages:[{role:"user",content:`You are a billing assistant for an electrical shop. Available products:\n${prodList}\n\nCustomer request: "${aiInput}"\n\nReturn ONLY JSON (no markdown): {"items":[{"name":"exact product name from list","qty":1,"rate":0,"gstRate":18,"hsn":"","unit":"Pcs"}]}\n\nMatch product names exactly from the list. If not found, use closest match.`}]
+        })
+      });
+      const d=await res.json();
+      const txt=d.content?.find(b=>b.type==="text")?.text||"{}";
+      const clean=txt.replace(/```json|```/g,"").trim();
+      const parsed=JSON.parse(clean);
+      if(parsed.items?.length){
+        const newItems=parsed.items.map(it=>{
+          const match=products.find(p=>p.name===it.name);
+          return{id:uid(),name:it.name,hsn:match?.hsn||it.hsn||"",unit:match?.unit||it.unit||"Pcs",qty:it.qty||1,rate:match?.rate||it.rate||0,gstRate:match?.gstRate||it.gstRate||18};
+        });
+        setItems(prev=>{
+          const base=prev.filter(i=>i.name);
+          return base.length?[...base,...newItems]:[...newItems];
+        });
+        setAiSuggest(false);
+        setAiInput("");
+      }else{
+        alert("Could not match any products. Try being more specific.");
+      }
+    }catch(e){alert("AI error: "+e.message);}
+    setAiLoading(false);
+  }
+
+  const filteredCusts=customers.filter(c=>!custQ||c.name.toLowerCase().includes(custQ.toLowerCase())||c.mobile.includes(custQ));
+
+  return(
+    <div className="scroll-area" style={{flex:1,overflowY:"auto",padding:"16px 14px 100px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+        <button onClick={()=>setView("dashboard")} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,color:C.navy,padding:"4px 0"}}>←</button>
+        <h2 style={{fontSize:18,fontWeight:700,color:C.text}}>New Invoice</h2>
+        <span style={{marginLeft:"auto",fontSize:12,color:C.muted,fontWeight:600}}>{nextNo(invoices)}</span>
+      </div>
+
+      {/* Customer */}
+      <Card style={{padding:"14px 14px",marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={{fontWeight:700,fontSize:14}}>👤 Customer</div>
+          <button onClick={()=>setShowCustSearch(true)} style={{background:`${C.blue}15`,border:`1px solid ${C.blue}30`,borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:12,color:C.blue,fontWeight:600}}>📋 Select</button>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          <div><Label>Name</Label><Input value={customer.name} onChange={v=>setCustomer(c=>({...c,name:v}))} placeholder="Customer name"/></div>
+          <div><Label>Mobile</Label><Input value={customer.mobile} onChange={v=>setCustomer(c=>({...c,mobile:v}))} placeholder="Mobile number" type="tel"/></div>
+          <div style={{gridColumn:"1/-1"}}><Label>Address</Label><Input value={customer.address} onChange={v=>setCustomer(c=>({...c,address:v}))} placeholder="Address (optional)"/></div>
+          <div>
+            <Label>State</Label>
+            <select value={customer.state} onChange={e=>{const s=e.target.value;setCustomer(c=>({...c,state:s}));setIsInterstate(s!=="Bihar");}}
+              style={{border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 10px",fontSize:13,outline:"none",background:"#fff",width:"100%"}}>
+              {["Bihar","Uttar Pradesh","Delhi","Maharashtra","Jharkhand","West Bengal","Rajasthan","Madhya Pradesh","Gujarat","Karnataka","Tamil Nadu","Telangana","Andhra Pradesh","Odisha","Punjab","Haryana","Uttarakhand","Himachal Pradesh","Assam","Chhattisgarh"].map(s=><option key={s}>{s}</option>)}
+            </select>
+          </div>
+          <div><Label>GSTIN (opt)</Label><Input value={customer.gstin} onChange={v=>setCustomer(c=>({...c,gstin:v}))} placeholder="GSTIN"/></div>
+        </div>
+      </Card>
+
+      {/* Invoice Meta */}
+      <Card style={{padding:"14px 14px",marginBottom:12}}>
+        <div style={{fontWeight:700,fontSize:14,marginBottom:10}}>📋 Invoice Details</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          <div><Label>Date</Label><Input value={date} onChange={setDate} type="date"/></div>
+          <div>
+            <Label>Payment</Label>
+            <select value={payMethod} onChange={e=>setPayMethod(e.target.value)} style={{border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 10px",fontSize:13,outline:"none",background:"#fff",width:"100%"}}>
+              <option value="cash">💵 Cash</option>
+              <option value="upi">📱 UPI / QR</option>
+              <option value="card">💳 Card</option>
+              <option value="bank">🏦 Bank Transfer</option>
+              <option value="credit">📒 Credit / Khata</option>
+            </select>
+          </div>
+          <div>
+            <Label>Status</Label>
+            <select value={status} onChange={e=>setStatus(e.target.value)} style={{border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 10px",fontSize:13,outline:"none",background:"#fff",width:"100%"}}>
+              <option value="unpaid">Unpaid</option>
+              <option value="paid">Paid</option>
+              <option value="partial">Partial</option>
+            </select>
+          </div>
+          {status==="partial"&&<div><Label>Paid Amount ₹</Label><Input value={paidAmt} onChange={setPaidAmt} type="number" placeholder="0"/></div>}
+          <div><Label>Discount %</Label><Input value={discountPct} onChange={setDiscountPct} type="number" placeholder="0"/></div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10}}>
+          <input type="checkbox" id="interstate" checked={isInterstate} onChange={e=>setIsInterstate(e.target.checked)} style={{width:16,height:16}}/>
+          <label htmlFor="interstate" style={{fontSize:13,color:C.text,cursor:"pointer"}}>Interstate supply (IGST instead of CGST+SGST)</label>
+        </div>
+      </Card>
+
+      {/* Items */}
+      <Card style={{padding:"14px 14px",marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={{fontWeight:700,fontSize:14}}>🛒 Items</div>
+          <button onClick={()=>setAiSuggest(true)} style={{background:`${C.purple}15`,border:`1px solid ${C.purple}30`,borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:12,color:C.purple,fontWeight:600}}>
+            ✨ AI Add
+          </button>
+        </div>
+
+        {items.map((it,idx)=>(
+          <div key={it.id} style={{border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",marginBottom:8,background:"#faf9f7"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <span style={{fontSize:12,fontWeight:600,color:C.muted}}>ITEM {idx+1}</span>
+              {items.length>1&&<button onClick={()=>removeItem(it.id)} style={{background:"none",border:"none",color:C.red,cursor:"pointer",fontSize:16}}>🗑</button>}
+            </div>
+            {/* Product search */}
+            <div style={{marginBottom:6}}>
+              <Label>Product Name</Label>
+              <div style={{position:"relative"}}>
+                <input value={it.name} onChange={e=>updateItem(it.id,"name",e.target.value)}
+                  placeholder="Type to search or enter name"
+                  style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px",fontSize:14,outline:"none",background:"#fff"}}/>
+                {it.name.length>1&&(
+                  <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#fff",border:`1px solid ${C.border}`,borderRadius:8,zIndex:10,maxHeight:150,overflowY:"auto",boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}}>
+                    {products.filter(p=>p.name.toLowerCase().includes(it.name.toLowerCase())).slice(0,6).map(p=>(
+                      <div key={p.id} onClick={()=>pickProduct(it.id,p)}
+                        style={{padding:"9px 12px",cursor:"pointer",fontSize:13,borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between"}}>
+                        <span>{p.name}</span>
+                        <span style={{color:C.muted,fontSize:12}}>₹{p.rate} | {p.stock} left</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+              <div><Label>Qty</Label><Input value={it.qty} onChange={v=>updateItem(it.id,"qty",v)} type="number" placeholder="1"/></div>
+              <div><Label>Rate ₹</Label><Input value={it.rate} onChange={v=>updateItem(it.id,"rate",v)} type="number" placeholder="0"/></div>
+              <div>
+                <Label>GST %</Label>
+                <select value={it.gstRate} onChange={e=>updateItem(it.id,"gstRate",e.target.value)}
+                  style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 10px",fontSize:14,background:"#fff"}}>
+                  {[0,5,12,18,28].map(r=><option key={r} value={r}>{r}%</option>)}
+                </select>
+              </div>
+              <div><Label>Unit</Label>
+                <select value={it.unit} onChange={e=>updateItem(it.id,"unit",e.target.value)}
+                  style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 10px",fontSize:14,background:"#fff"}}>
+                  {["Pcs","Mtr","Kg","Box","Roll","Set","Pair"].map(u=><option key={u}>{u}</option>)}
+                </select>
+              </div>
+            </div>
+            {it.name&&(+it.qty>0)&&(+it.rate>0)&&(
+              <div style={{marginTop:8,padding:"6px 10px",background:`${C.navy}08`,borderRadius:6,fontSize:12,color:C.navy,fontWeight:600}}>
+                Line Total: ₹{fmt(calcItem(it).lineTotal)} (Taxable: ₹{fmt(calcItem(it).taxable)} + GST: ₹{fmt(calcItem(it).gstAmt)})
+              </div>
+            )}
+          </div>
+        ))}
+        <Btn full variant="ghost" onClick={addLine}>+ Add Item</Btn>
+      </Card>
+
+      {/* Notes */}
+      <Card style={{padding:"14px 14px",marginBottom:12}}>
+        <Label>Notes (optional)</Label>
+        <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Any special instructions or notes…"
+          style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px",fontSize:13,outline:"none",background:"#fff",minHeight:60,resize:"none",fontFamily:"inherit"}}/>
+      </Card>
+
+      {/* Total Summary */}
+      <Card style={{padding:"14px 16px",marginBottom:16,background:C.navy}}>
+        <div style={{color:"rgba(255,255,255,0.6)",fontSize:12,marginBottom:10}}>INVOICE SUMMARY</div>
+        {[
+          {label:"Subtotal (Taxable)",val:`₹${fmt(rawSubtotal)}`,color:"rgba(255,255,255,0.8)"},
+          discountPct>0&&{label:`Discount (${discountPct}%)`,val:`-₹${fmt(discountAmt)}`,color:C.saffronL},
+          {label:"Total GST",val:`₹${fmt(calc.totalGst)}`,color:"rgba(255,255,255,0.8)"},
+        ].filter(Boolean).map(r=>(
+          <div key={r.label} style={{display:"flex",justifyContent:"space-between",marginBottom:6,fontSize:13}}>
+            <span style={{color:"rgba(255,255,255,0.6)"}}>{r.label}</span>
+            <span style={{fontWeight:600,color:r.color}}>{r.val}</span>
+          </div>
+        ))}
+        <div style={{display:"flex",justifyContent:"space-between",paddingTop:10,borderTop:"1px solid rgba(255,255,255,0.15)",fontSize:16}}>
+          <span style={{fontWeight:700,color:"#fff"}}>Grand Total</span>
+          <span style={{fontWeight:800,color:C.saffronL}}>₹{fmt(finalGrandTotal)}</span>
+        </div>
+        <div style={{fontSize:11,color:"rgba(255,255,255,0.35)",marginTop:5,fontStyle:"italic"}}>{rupWords(finalGrandTotal)}</div>
+      </Card>
+
+      <div style={{display:"flex",gap:8}}>
+        <Btn variant="ghost" onClick={()=>setView("dashboard")} style={{flex:1}}>Cancel</Btn>
+        <Btn variant="primary" onClick={saveInvoice} disabled={saving} style={{flex:2}}>
+          {saving?"Saving…":"💾 Save Invoice"}
+        </Btn>
+      </div>
+
+      {/* Customer Search Modal */}
+      {showCustSearch&&(
+        <Modal title="Select Customer" onClose={()=>setShowCustSearch(false)}>
+          <input value={custQ} onChange={e=>setCustQ(e.target.value)} placeholder="Search by name or mobile…" autoFocus
+            style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px",fontSize:14,outline:"none",marginBottom:12}}/>
+          {filteredCusts.length===0?<div style={{textAlign:"center",color:C.muted,padding:20}}>No customers found</div>
+            :filteredCusts.slice(0,15).map(c=>(
+            <div key={c.id} onClick={()=>pickCustomer(c)}
+              style={{padding:"12px 14px",border:`1px solid ${C.border}`,borderRadius:10,marginBottom:8,cursor:"pointer",background:"#faf9f7"}}>
+              <div style={{fontWeight:600,fontSize:14}}>{c.name}</div>
+              <div style={{fontSize:12,color:C.muted}}>📞 {c.mobile} {c.state&&`• ${c.state}`}</div>
+            </div>
+          ))}
+        </Modal>
+      )}
+
+      {/* AI Suggest Modal */}
+      {aiSuggest&&(
+        <Modal title="✨ AI Item Assistant" onClose={()=>setAiSuggest(false)}>
+          <p style={{color:C.muted,fontSize:13,marginBottom:14}}>Describe what the customer wants and AI will pick the right products.</p>
+          <textarea value={aiInput} onChange={e=>setAiInput(e.target.value)}
+            placeholder="e.g. 3 LED bulbs and 10 meters copper wire for house wiring"
+            style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px",fontSize:14,outline:"none",minHeight:80,resize:"none",fontFamily:"inherit",marginBottom:12}}/>
+          <Btn full onClick={aiSuggestItems} disabled={aiLoading}>
+            {aiLoading?<><Spinner/> Finding items…</>:"✨ Suggest Items"}
+          </Btn>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── INVOICES LIST ─────────────────────────────────────────────────────
+function Invoices({invoices,saveInv,setViewInv,setView}){
+  const [search,setSearch]=useState("");
+  const [filter,setFilter]=useState("all");
+  const filtered=invoices
+    .filter(i=>filter==="all"||i.status===filter)
+    .filter(i=>!search||i.no.toLowerCase().includes(search.toLowerCase())||i.customer.name?.toLowerCase().includes(search.toLowerCase())||i.customer.mobile?.includes(search))
+    .sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+
+  function markStatus(inv,s){saveInv(invoices.map(i=>i.id===inv.id?{...i,status:s}:i));}
+  function del(id){if(window.confirm("Delete this invoice?"))saveInv(invoices.filter(i=>i.id!==id));}
+
+  return(
+    <div className="scroll-area" style={{flex:1,overflowY:"auto",padding:"16px 14px 80px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+        <button onClick={()=>setView("dashboard")} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,color:C.navy}}>←</button>
+        <h2 style={{fontSize:18,fontWeight:700,color:C.text}}>All Invoices</h2>
+        <Btn small onClick={()=>setView("new-invoice")} style={{marginLeft:"auto"}}>➕ New</Btn>
+      </div>
+
+      <div style={{display:"flex",gap:8,marginBottom:12}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search invoice, customer…"
+          style={{flex:1,border:`1px solid ${C.border}`,borderRadius:8,padding:"9px 12px",fontSize:13,outline:"none",background:"#fff"}}/>
+        <select value={filter} onChange={e=>setFilter(e.target.value)}
+          style={{border:`1px solid ${C.border}`,borderRadius:8,padding:"9px 10px",fontSize:13,outline:"none",background:"#fff"}}>
+          <option value="all">All</option>
+          <option value="unpaid">Unpaid</option>
+          <option value="paid">Paid</option>
+          <option value="partial">Partial</option>
+        </select>
+      </div>
+
+      {filtered.length===0
+        ?<div style={{textAlign:"center",color:C.muted,padding:40}}>No invoices found.</div>
+        :<div>{filtered.map(inv=>(
+          <Card key={inv.id} style={{padding:"12px 14px",marginBottom:8}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+              <div style={{cursor:"pointer"}} onClick={()=>{setViewInv(inv);setView("view-invoice");}}>
+                <div style={{fontWeight:700,color:C.navy,fontSize:14}}>{inv.no}</div>
+                <div style={{fontSize:13,color:C.text,marginTop:1}}>{inv.customer.name||"Cash Customer"}</div>
+                <div style={{fontSize:11,color:C.muted}}>{new Date(inv.date).toLocaleDateString("en-IN")} {inv.customer.mobile&&`• ${inv.customer.mobile}`}</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontWeight:700,fontSize:14}}>₹{fmt(inv.grandTotal)}</div>
+                <StatusBadge status={inv.status}/>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              <button onClick={()=>doPrint(inv)} style={{background:"#f0f0f0",border:"none",borderRadius:6,padding:"5px 10px",cursor:"pointer",fontSize:12}}>🖨 Print</button>
+              <button onClick={()=>{const msg=`*${SHOP.name}*\nInvoice: ${inv.no}\nDate: ${new Date(inv.date).toLocaleDateString("en-IN")}\nAmount: ₹${fmt(inv.grandTotal)}\nStatus: ${inv.status.toUpperCase()}\n\nThank you!`;window.open(`https://wa.me/${inv.customer.mobile?.replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`,"_blank");}}
+                style={{background:"#d1fae5",border:"none",borderRadius:6,padding:"5px 10px",cursor:"pointer",fontSize:12}}>💬 WA</button>
+              {inv.status!=="paid"&&<button onClick={()=>markStatus(inv,"paid")} style={{background:"#d1fae5",border:"none",borderRadius:6,padding:"5px 10px",cursor:"pointer",fontSize:12,color:C.green,fontWeight:600}}>✓ Paid</button>}
+              {inv.status==="paid"&&<button onClick={()=>markStatus(inv,"unpaid")} style={{background:"#fef2f2",border:"none",borderRadius:6,padding:"5px 10px",cursor:"pointer",fontSize:12,color:C.red}}>Unpaid</button>}
+              <button onClick={()=>del(inv.id)} style={{background:"none",border:"none",cursor:"pointer",color:C.red,fontSize:16,marginLeft:"auto"}}>🗑</button>
+            </div>
+          </Card>
+        ))}</div>
+      }
+    </div>
+  );
+}
+
+// ── VIEW INVOICE ──────────────────────────────────────────────────────
+function ViewInvoice({inv,setView,saveInv,invoices}){
+  const gstSum={};
+  inv.items.forEach(it=>{if(!gstSum[it.gstRate])gstSum[it.gstRate]={taxable:0,gst:0};gstSum[it.gstRate].taxable+=it.taxable;gstSum[it.gstRate].gst+=it.gstAmt;});
+  const markStatus=s=>saveInv(invoices.map(i=>i.id===inv.id?{...i,status:s}:i));
+
+  return(
+    <div className="scroll-area" style={{flex:1,overflowY:"auto",padding:"16px 14px 80px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+        <button onClick={()=>setView("invoices")} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,color:C.navy}}>←</button>
+        <div>
+          <h2 style={{fontSize:17,fontWeight:700,color:C.text}}>{inv.no}</h2>
+          <div style={{fontSize:12,color:C.muted}}>{new Date(inv.date).toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"})}</div>
+        </div>
+        <div style={{marginLeft:"auto",display:"flex",gap:6,alignItems:"center"}}>
+          <StatusBadge status={inv.status}/>
+          <button onClick={()=>doPrint(inv)} style={{background:"#f0f0f0",border:"none",borderRadius:8,padding:"6px 10px",cursor:"pointer",fontSize:13}}>🖨</button>
+        </div>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+        <Card style={{padding:"12px 14px"}}>
+          <div style={{fontSize:10,color:C.muted,fontWeight:700,textTransform:"uppercase",marginBottom:6}}>Seller</div>
+          <div style={{fontWeight:700,color:C.navy,fontSize:13}}>{SHOP.name}</div>
+          <div style={{fontSize:11,color:C.muted,marginTop:2}}>{SHOP.address}</div>
+          <div style={{fontSize:11,marginTop:2}}>📞 {SHOP.phones[0]}</div>
+        </Card>
+        <Card style={{padding:"12px 14px"}}>
+          <div style={{fontSize:10,color:C.muted,fontWeight:700,textTransform:"uppercase",marginBottom:6}}>Buyer</div>
+          <div style={{fontWeight:700,fontSize:13}}>{inv.customer.name||"Cash"}</div>
+          {inv.customer.mobile&&<div style={{fontSize:11,marginTop:2}}>📞 {inv.customer.mobile}</div>}
+          <div style={{fontSize:11,color:C.muted,marginTop:2}}>{inv.customer.state}</div>
+        </Card>
+      </div>
+
+      <Card style={{marginBottom:12,overflowX:"auto"}}>
+        <div style={{minWidth:400,overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse"}}>
+            <thead><tr style={{background:C.navy,color:"#fff"}}>
+              {["#","Item","Qty","Rate","GST","Total"].map(h=>(
+                <th key={h} style={{padding:"8px 10px",textAlign:"left",fontSize:11,fontWeight:600,whiteSpace:"nowrap"}}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {inv.items.map((it,i)=>(
+                <tr key={i} style={{borderBottom:`1px solid ${C.border}`,background:i%2?"#faf8f4":"#fff"}}>
+                  <td style={{padding:"8px 10px",fontSize:12,color:C.muted}}>{i+1}</td>
+                  <td style={{padding:"8px 10px",fontSize:12,fontWeight:500}}>{it.name}</td>
+                  <td style={{padding:"8px 10px",fontSize:12}}>{it.qty} {it.unit}</td>
+                  <td style={{padding:"8px 10px",fontSize:12}}>₹{fmt(it.rate)}</td>
+                  <td style={{padding:"8px 10px",fontSize:12}}>{it.gstRate}%</td>
+                  <td style={{padding:"8px 10px",fontSize:12,fontWeight:700}}>₹{fmt(it.lineTotal)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={{padding:"12px 14px",borderTop:`1px solid ${C.border}`}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:4,fontSize:13}}><span style={{color:C.muted}}>Subtotal</span><span style={{fontWeight:600}}>₹{fmt(inv.subtotal)}</span></div>
+          {Object.entries(gstSum).map(([r,v])=>(
+            <div key={r} style={{display:"flex",justifyContent:"space-between",marginBottom:4,fontSize:12,color:C.muted}}>
+              {inv.isInterstate?<><span>IGST @ {r}%</span><span>₹{fmt(v.gst)}</span></>:<><span>CGST+SGST @ {r}%</span><span>₹{fmt(v.gst)}</span></>}
+            </div>
+          ))}
+          <div style={{display:"flex",justifyContent:"space-between",padding:"10px 12px",background:C.navy,borderRadius:8,color:"#fff",marginTop:8}}>
+            <span style={{fontWeight:700}}>Grand Total</span>
+            <span style={{fontWeight:800,fontSize:16}}>₹{fmt(inv.grandTotal)}</span>
+          </div>
+          <div style={{fontSize:11,color:C.muted,marginTop:5,fontStyle:"italic",textAlign:"right"}}>{rupWords(inv.grandTotal)}</div>
+        </div>
+      </Card>
+
+      <div style={{display:"flex",gap:8}}>
+        {inv.status!=="paid"&&<Btn variant="green" onClick={()=>markStatus("paid")} style={{flex:1}}>✓ Mark Paid</Btn>}
+        {inv.status==="paid"&&<Btn variant="ghost" onClick={()=>markStatus("unpaid")} style={{flex:1}}>Mark Unpaid</Btn>}
+        <Btn variant="navy" onClick={()=>doPrint(inv)} style={{flex:1}}>🖨 Print</Btn>
+      </div>
+    </div>
+  );
+}
+
+// ── STOCK PAGE ────────────────────────────────────────────────────────
+function StockPage({products,saveProd}){
+  const [showScan,setShowScan]=useState(false);
+  const [editId,setEditId]=useState(null);
+  const [editVal,setEditVal]=useState({});
+  const [search,setSearch]=useState("");
+  const [filterStock,setFilterStock]=useState("all");
+  const [showAdd,setShowAdd]=useState(false);
+  const [quickId,setQuickId]=useState(null);
+  const [quickDelta,setQuickDelta]=useState(0);
+
+  const list=products
+    .filter(p=>!search||p.name.toLowerCase().includes(search.toLowerCase()))
+    .filter(p=>filterStock==="all"||(filterStock==="low"&&(p.stock||0)<10)||(filterStock==="out"&&(p.stock||0)===0))
+    .sort((a,b)=>a.name.localeCompare(b.name));
+
+  const [fullEditProd,setFullEditProd]=useState(null);
+  const [fullEditVal,setFullEditVal]=useState({});
+  const UNITS2=["Pcs","Mtr","Kg","Box","Set","Roll","Pair","Ltr"];
+  const GST2=[0,5,12,18,28];
+
+  function startEdit(p){setEditId(p.id);setEditVal({stock:p.stock||0,costPrice:p.costPrice||0,rate:p.rate||0});}
+  function saveEdit(id){saveProd(products.map(p=>p.id===id?{...p,...editVal,stock:+editVal.stock,costPrice:+editVal.costPrice,rate:+editVal.rate}:p));setEditId(null);}
+  function openFullEdit(p){setFullEditVal({...p});setFullEditProd(p.id);}
+  function saveFullEdit(){
+    if(!fullEditVal.name?.trim()||!fullEditVal.rate){alert("Name aur Rate zaroori hai.");return;}
+    saveProd(products.map(p=>p.id===fullEditProd?{...fullEditVal,rate:+fullEditVal.rate,costPrice:+fullEditVal.costPrice||0,gstRate:+fullEditVal.gstRate,stock:+fullEditVal.stock||0}:p));
+    setFullEditProd(null);
+  }
+  function deleteProd(id,name){if(window.confirm(`"${name}" delete karein?`))saveProd(products.filter(p=>p.id!==id));}
+  function quickAdd(id,delta){saveProd(products.map(p=>p.id===id?{...p,stock:Math.max(0,(p.stock||0)+delta)}:p));}
+
+  async function applyScannedBill(reviewItems){
+    let updated=[...products];
+    for(const ri of reviewItems){
+      if(!ri.selected)continue;
+      if(ri.matched){
+        updated=updated.map(p=>p.id===ri.matched.id?{...p,stock:(p.stock||0)+ri.addStock,costPrice:ri.newCost||p.costPrice}:p);
+      }else{
+        updated.push({id:"p"+uid(),name:ri.name,hsn:"",unit:ri.unit||"Pcs",rate:ri.newCost*1.3||0,gstRate:18,costPrice:ri.newCost||0,stock:ri.addStock});
+      }
+    }
+    saveProd(updated);
+    alert("✅ Stock updated successfully!");
+  }
+
+  const UNITS=["Pcs","Mtr","Kg","Box","Set","Roll","Pair","Ltr"];
+  const GST_RATES=[0,5,12,18,28];
+  const [newProd,setNewProd]=useState({name:"",hsn:"",unit:"Pcs",rate:"",costPrice:"",gstRate:18,stock:""});
+
+  function addNewProduct(){
+    if(!newProd.name.trim()||!newProd.rate){alert("Name aur Rate zaroori hai.");return;}
+    const p={id:"p"+uid(),name:newProd.name.trim(),hsn:newProd.hsn||"",unit:newProd.unit,rate:+newProd.rate,costPrice:+newProd.costPrice||0,gstRate:+newProd.gstRate,stock:+newProd.stock||0};
+    saveProd([...products,p]);
+    setNewProd({name:"",hsn:"",unit:"Pcs",rate:"",costPrice:"",gstRate:18,stock:""});
+    setShowAdd(false);
+  }
+
+  return(
+    <div className="scroll-area" style={{flex:1,overflowY:"auto",padding:"16px 14px 80px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+        <h2 style={{fontSize:18,fontWeight:700,color:C.text}}>📦 Stock</h2>
+        <Btn small onClick={()=>setShowAdd(true)}>+ Add</Btn>
+        <Btn small variant="navy" onClick={()=>setShowScan(true)} style={{marginLeft:"auto"}}>📷 Scan Bill</Btn>
+      </div>
+
+      {showAdd&&(
+        <Modal title="➕ Naya Product Add Karo" onClose={()=>setShowAdd(false)}>
+          <div style={{display:"grid",gap:12}}>
+            <div><Label>Product Name *</Label><Input value={newProd.name} onChange={v=>setNewProd(f=>({...f,name:v}))} placeholder="e.g. Ceiling Fan 1200mm" autoFocus/></div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <div><Label>HSN Code</Label><Input value={newProd.hsn} onChange={v=>setNewProd(f=>({...f,hsn:v}))} placeholder="e.g. 84145100"/></div>
+              <div>
+                <Label>Unit</Label>
+                <select value={newProd.unit} onChange={e=>setNewProd(f=>({...f,unit:e.target.value}))}
+                  style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:8,padding:"10px",fontSize:14,background:"#fff",outline:"none"}}>
+                  {UNITS.map(u=><option key={u}>{u}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <div><Label>Selling Rate ₹ *</Label><Input value={newProd.rate} onChange={v=>setNewProd(f=>({...f,rate:v}))} type="number" placeholder="0"/></div>
+              <div><Label>Cost Price ₹</Label><Input value={newProd.costPrice} onChange={v=>setNewProd(f=>({...f,costPrice:v}))} type="number" placeholder="0"/></div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <div>
+                <Label>GST Rate %</Label>
+                <select value={newProd.gstRate} onChange={e=>setNewProd(f=>({...f,gstRate:e.target.value}))}
+                  style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:8,padding:"10px",fontSize:14,background:"#fff",outline:"none"}}>
+                  {GST_RATES.map(g=><option key={g} value={g}>{g}%</option>)}
+                </select>
+              </div>
+              <div><Label>Opening Stock</Label><Input value={newProd.stock} onChange={v=>setNewProd(f=>({...f,stock:v}))} type="number" placeholder="0"/></div>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:16}}>
+            <Btn variant="ghost" onClick={()=>setShowAdd(false)} style={{flex:1}}>Cancel</Btn>
+            <Btn variant="primary" onClick={addNewProduct} style={{flex:1}}>💾 Save Product</Btn>
+          </div>
+        </Modal>
+      )}
+
+      <div style={{display:"flex",gap:8,marginBottom:12}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search products…"
+          style={{flex:1,border:`1px solid ${C.border}`,borderRadius:8,padding:"9px 12px",fontSize:13,outline:"none",background:"#fff"}}/>
+        <select value={filterStock} onChange={e=>setFilterStock(e.target.value)}
+          style={{border:`1px solid ${C.border}`,borderRadius:8,padding:"9px 10px",fontSize:13,background:"#fff",outline:"none"}}>
+          <option value="all">All</option>
+          <option value="low">Low</option>
+          <option value="out">Out</option>
+        </select>
+      </div>
+
+      {showScan&&<ScanBillModal products={products} onClose={()=>setShowScan(false)} onApply={applyScannedBill}/>}
+
+      {/* Full Edit Modal */}
+      {fullEditProd&&(
+        <Modal title="✏️ Product Edit Karo" onClose={()=>setFullEditProd(null)}>
+          <div style={{display:"grid",gap:12}}>
+            <div><Label>Product Name *</Label><Input value={fullEditVal.name||""} onChange={v=>setFullEditVal(f=>({...f,name:v}))} placeholder="Product name"/></div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <div><Label>HSN Code</Label><Input value={fullEditVal.hsn||""} onChange={v=>setFullEditVal(f=>({...f,hsn:v}))} placeholder="HSN"/></div>
+              <div>
+                <Label>Unit</Label>
+                <select value={fullEditVal.unit||"Pcs"} onChange={e=>setFullEditVal(f=>({...f,unit:e.target.value}))}
+                  style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:8,padding:"10px",fontSize:14,background:"#fff",outline:"none"}}>
+                  {UNITS2.map(u=><option key={u}>{u}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <div><Label>Selling Rate ₹ *</Label><Input value={fullEditVal.rate||""} onChange={v=>setFullEditVal(f=>({...f,rate:v}))} type="number" placeholder="0"/></div>
+              <div><Label>Cost Price ₹</Label><Input value={fullEditVal.costPrice||""} onChange={v=>setFullEditVal(f=>({...f,costPrice:v}))} type="number" placeholder="0"/></div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <div>
+                <Label>GST %</Label>
+                <select value={fullEditVal.gstRate??18} onChange={e=>setFullEditVal(f=>({...f,gstRate:e.target.value}))}
+                  style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:8,padding:"10px",fontSize:14,background:"#fff",outline:"none"}}>
+                  {GST2.map(g=><option key={g} value={g}>{g}%</option>)}
+                </select>
+              </div>
+              <div><Label>Stock</Label><Input value={fullEditVal.stock||""} onChange={v=>setFullEditVal(f=>({...f,stock:v}))} type="number" placeholder="0"/></div>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:16}}>
+            <Btn variant="danger" onClick={()=>{if(window.confirm(`"${fullEditVal.name}" delete karein?`)){saveProd(products.filter(p=>p.id!==fullEditProd));setFullEditProd(null);}}} style={{flex:1}}>🗑 Delete</Btn>
+            <Btn variant="ghost" onClick={()=>setFullEditProd(null)} style={{flex:1}}>Cancel</Btn>
+            <Btn variant="primary" onClick={saveFullEdit} style={{flex:1}}>💾 Save</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {list.map(p=>(
+        <Card key={p.id} style={{padding:"12px 14px",marginBottom:8}}>
+          {editId===p.id?(
+            <div>
+              <div style={{fontWeight:600,fontSize:14,marginBottom:8}}>{p.name}</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>
+                <div><Label>Stock</Label><input type="number" value={editVal.stock} onChange={e=>setEditVal(v=>({...v,stock:e.target.value}))} style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:6,padding:"7px 8px",fontSize:13}}/></div>
+                <div><Label>Cost ₹</Label><input type="number" value={editVal.costPrice} onChange={e=>setEditVal(v=>({...v,costPrice:e.target.value}))} style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:6,padding:"7px 8px",fontSize:13}}/></div>
+                <div><Label>Rate ₹</Label><input type="number" value={editVal.rate} onChange={e=>setEditVal(v=>({...v,rate:e.target.value}))} style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:6,padding:"7px 8px",fontSize:13}}/></div>
+              </div>
+              <div style={{display:"flex",gap:6}}>
+                <Btn small variant="green" onClick={()=>saveEdit(p.id)} style={{flex:1}}>✅ Save</Btn>
+                <Btn small variant="ghost" onClick={()=>setEditId(null)} style={{flex:1}}>Cancel</Btn>
+              </div>
+            </div>
+          ):(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:600,fontSize:14}}>{p.name}</div>
+                  <div style={{fontSize:11,color:C.muted,fontFamily:"monospace"}}>{p.hsn}</div>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontWeight:800,fontSize:16,color:(p.stock||0)===0?C.red:(p.stock||0)<10?C.saffron:C.green}}>{p.stock||0} <span style={{fontSize:12,fontWeight:500,color:C.muted}}>{p.unit}</span></div>
+                  {(p.stock||0)<10&&<div style={{fontSize:10,color:(p.stock||0)===0?C.red:C.saffron,fontWeight:600}}>{(p.stock||0)===0?"OUT OF STOCK":"LOW STOCK"}</div>}
+                </div>
+              </div>
+              <div style={{fontSize:12,color:C.muted,marginBottom:8}}>
+                Cost: ₹{p.costPrice||0} | Rate: ₹{p.rate} | GST: {p.gstRate}%
+              </div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                <button onClick={()=>quickAdd(p.id,-1)} style={{background:"#fef2f2",border:"none",borderRadius:6,padding:"6px 14px",cursor:"pointer",fontSize:16,color:C.red,fontWeight:700}}>−</button>
+                <button onClick={()=>quickAdd(p.id,1)} style={{background:"#d1fae5",border:"none",borderRadius:6,padding:"6px 14px",cursor:"pointer",fontSize:16,color:C.green,fontWeight:700}}>+</button>
+                <button onClick={()=>quickAdd(p.id,10)} style={{background:"#d1fae5",border:"none",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontSize:12,color:C.green,fontWeight:700}}>+10</button>
+                <button onClick={()=>startEdit(p)} style={{background:"#f0f7ff",border:"none",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontSize:12,color:C.blue,fontWeight:600}}>📝 Stock</button>
+                <button onClick={()=>openFullEdit(p)} style={{marginLeft:"auto",background:"#fff7ed",border:"none",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontSize:12,color:C.saffron,fontWeight:600}}>✏️ Edit</button>
+              </div>
+            </div>
+          )}
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// ── PRODUCTS PAGE ─────────────────────────────────────────────────────
+function Products({products,saveProd}){
+  const [showAdd,setShowAdd]=useState(false);
+  const [editProd,setEditProd]=useState(null);
+  const [search,setSearch]=useState("");
+  const blank={name:"",hsn:"",unit:"Pcs",rate:0,gstRate:18,costPrice:0,stock:0};
+  const [form,setForm]=useState(blank);
+
+  const list=products.filter(p=>!search||p.name.toLowerCase().includes(search.toLowerCase())).sort((a,b)=>a.name.localeCompare(b.name));
+
+  function openAdd(){setForm(blank);setEditProd(null);setShowAdd(true);}
+  function openEdit(p){setForm({...p});setEditProd(p.id);setShowAdd(true);}
+  function save(){
+    if(!form.name.trim()){alert("Enter product name.");return;}
+    if(editProd){saveProd(products.map(p=>p.id===editProd?{...p,...form,rate:+form.rate,costPrice:+form.costPrice,gstRate:+form.gstRate,stock:+form.stock}:p));}
+    else{saveProd([...products,{id:"p"+uid(),...form,rate:+form.rate,costPrice:+form.costPrice,gstRate:+form.gstRate,stock:+form.stock}]);}
+    setShowAdd(false);
+  }
+  function del(id){if(window.confirm("Delete this product?"))saveProd(products.filter(p=>p.id!==id));}
+
+  return(
+    <div className="scroll-area" style={{flex:1,overflowY:"auto",padding:"16px 14px 80px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+        <h2 style={{fontSize:18,fontWeight:700,color:C.text}}>🔌 Products</h2>
+        <Btn small onClick={openAdd} style={{marginLeft:"auto"}}>+ Add</Btn>
+      </div>
+      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search products…"
+        style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:8,padding:"9px 12px",fontSize:13,outline:"none",background:"#fff",marginBottom:12}}/>
+
+      {list.map(p=>(
+        <Card key={p.id} style={{padding:"12px 14px",marginBottom:8}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:600,fontSize:14}}>{p.name}</div>
+              <div style={{fontSize:11,color:C.muted,marginTop:2}}>HSN: {p.hsn||"—"} | {p.unit} | GST: {p.gstRate}%</div>
+              <div style={{fontSize:12,marginTop:2}}>Cost: ₹{p.costPrice||0} → Sale: <b>₹{p.rate}</b> | Stock: <b style={{color:(p.stock||0)<10?C.red:C.green}}>{p.stock||0}</b></div>
+            </div>
+            <div style={{display:"flex",gap:6,marginLeft:8}}>
+              <button onClick={()=>openEdit(p)} style={{background:"#f0f7ff",border:"none",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontSize:12,color:C.blue}}>✏️</button>
+              <button onClick={()=>del(p.id)} style={{background:"#fef2f2",border:"none",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontSize:12,color:C.red}}>🗑</button>
+            </div>
+          </div>
+        </Card>
+      ))}
+
+      {showAdd&&(
+        <Modal title={editProd?"Edit Product":"Add New Product"} onClose={()=>setShowAdd(false)}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div style={{gridColumn:"1/-1"}}><Label>Product Name *</Label><Input value={form.name} onChange={v=>setForm(f=>({...f,name:v}))} placeholder="e.g. LED Bulb 9W" autoFocus/></div>
+            <div><Label>HSN Code</Label><Input value={form.hsn} onChange={v=>setForm(f=>({...f,hsn:v}))} placeholder="8-digit"/></div>
+            <div>
+              <Label>Unit</Label>
+              <select value={form.unit} onChange={e=>setForm(f=>({...f,unit:e.target.value}))} style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 10px",fontSize:14,background:"#fff"}}>
+                {["Pcs","Mtr","Kg","Box","Roll","Set","Pair","Ltr"].map(u=><option key={u}>{u}</option>)}
+              </select>
+            </div>
+            <div><Label>Sale Rate ₹ *</Label><Input value={form.rate} onChange={v=>setForm(f=>({...f,rate:v}))} type="number" placeholder="0"/></div>
+            <div><Label>Cost Price ₹</Label><Input value={form.costPrice} onChange={v=>setForm(f=>({...f,costPrice:v}))} type="number" placeholder="0"/></div>
+            <div>
+              <Label>GST %</Label>
+              <select value={form.gstRate} onChange={e=>setForm(f=>({...f,gstRate:e.target.value}))} style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 10px",fontSize:14,background:"#fff"}}>
+                {[0,5,12,18,28].map(r=><option key={r} value={r}>{r}%</option>)}
+              </select>
+            </div>
+            <div><Label>Opening Stock</Label><Input value={form.stock} onChange={v=>setForm(f=>({...f,stock:v}))} type="number" placeholder="0"/></div>
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:16}}>
+            <Btn variant="ghost" onClick={()=>setShowAdd(false)} style={{flex:1}}>Cancel</Btn>
+            <Btn onClick={save} style={{flex:1}}>💾 Save</Btn>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── CUSTOMERS PAGE ────────────────────────────────────────────────────
+function Customers({customers,saveCust,invoices}){
+  const [search,setSearch]=useState("");
+  const [showAdd,setShowAdd]=useState(false);
+  const [form,setForm]=useState({name:"",mobile:"",address:"",state:"Bihar",stateCode:"10",gstin:""});
+
+  const list=customers.filter(c=>!search||c.name.toLowerCase().includes(search.toLowerCase())||c.mobile.includes(search)).sort((a,b)=>a.name.localeCompare(b.name));
+
+  function getCustTotal(c){return invoices.filter(i=>i.customer.mobile===c.mobile).reduce((s,i)=>s+i.grandTotal,0);}
+  function getCustDue(c){return invoices.filter(i=>i.customer.mobile===c.mobile&&i.status!=="paid").reduce((s,i)=>s+(i.status==="partial"?i.grandTotal-(i.paidAmt||0):i.grandTotal),0);}
+
+  function save(){
+    if(!form.name.trim()||!form.mobile){alert("Name and mobile required.");return;}
+    saveCust([...customers,{id:uid(),...form,createdAt:new Date().toISOString()}]);
+    setShowAdd(false);
+    setForm({name:"",mobile:"",address:"",state:"Bihar",stateCode:"10",gstin:""});
+  }
+  function del(id){if(window.confirm("Delete customer?"))saveCust(customers.filter(c=>c.id!==id));}
+
+  return(
+    <div className="scroll-area" style={{flex:1,overflowY:"auto",padding:"16px 14px 80px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+        <h2 style={{fontSize:18,fontWeight:700,color:C.text}}>👥 Customers</h2>
+        <Btn small onClick={()=>setShowAdd(true)} style={{marginLeft:"auto"}}>+ Add</Btn>
+      </div>
+      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search customers…"
+        style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:8,padding:"9px 12px",fontSize:13,outline:"none",background:"#fff",marginBottom:12}}/>
+
+      {list.map(c=>{
+        const total=getCustTotal(c);
+        const due=getCustDue(c);
+        return(
+          <Card key={c.id} style={{padding:"12px 14px",marginBottom:8}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+              <div>
+                <div style={{fontWeight:700,fontSize:14}}>{c.name}</div>
+                <div style={{fontSize:12,color:C.muted,marginTop:2}}>📞 {c.mobile} {c.state&&`• ${c.state}`}</div>
+                {c.gstin&&<div style={{fontSize:11,color:C.muted,fontFamily:"monospace"}}>GSTIN: {c.gstin}</div>}
+                {total>0&&<div style={{fontSize:12,marginTop:4}}>Total: ₹{fmt(total)} {due>0&&<span style={{color:C.red,fontWeight:600}}>• Due: ₹{fmt(due)}</span>}</div>}
+              </div>
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={()=>{const msg=`Hello ${c.name}! Your outstanding balance at ${SHOP.name} is ₹${fmt(due)}. Please clear at your earliest convenience.`;window.open(`https://wa.me/${c.mobile?.replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`,"_blank");}} style={{background:"#d1fae5",border:"none",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontSize:12}}>💬</button>
+                <button onClick={()=>del(c.id)} style={{background:"#fef2f2",border:"none",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontSize:12,color:C.red}}>🗑</button>
+              </div>
+            </div>
+          </Card>
+        );
+      })}
+
+      {showAdd&&(
+        <Modal title="Add Customer" onClose={()=>setShowAdd(false)}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div style={{gridColumn:"1/-1"}}><Label>Name *</Label><Input value={form.name} onChange={v=>setForm(f=>({...f,name:v}))} placeholder="Customer name" autoFocus/></div>
+            <div style={{gridColumn:"1/-1"}}><Label>Mobile *</Label><Input value={form.mobile} onChange={v=>setForm(f=>({...f,mobile:v}))} placeholder="Mobile number" type="tel"/></div>
+            <div style={{gridColumn:"1/-1"}}><Label>Address</Label><Input value={form.address} onChange={v=>setForm(f=>({...f,address:v}))} placeholder="Address"/></div>
+            <div><Label>State</Label><Input value={form.state} onChange={v=>setForm(f=>({...f,state:v}))} placeholder="State"/></div>
+            <div><Label>GSTIN</Label><Input value={form.gstin} onChange={v=>setForm(f=>({...f,gstin:v}))} placeholder="GSTIN"/></div>
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:16}}>
+            <Btn variant="ghost" onClick={()=>setShowAdd(false)} style={{flex:1}}>Cancel</Btn>
+            <Btn onClick={save} style={{flex:1}}>💾 Save</Btn>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── PROFIT & LOSS ─────────────────────────────────────────────────────
+function ProfitLoss({invoices,products}){
+  const now=new Date();
+  const year=now.getMonth()>=3?now.getFullYear():now.getFullYear()-1;
+  const [selMonth,setSelMonth]=useState(null);
+
+  const monthlyData=Array.from({length:12},(_,i)=>{
+    const mIdx=(i+3)%12;
+    const yr=i<9?year:year+1;
+    const invs=invoices.filter(inv=>{const d=new Date(inv.date);return d.getMonth()===mIdx&&d.getFullYear()===yr;});
+    const revenue=invs.reduce((s,i)=>s+i.subtotal,0);
+    const gst=invs.reduce((s,i)=>s+i.totalGst,0);
+    const cogs=invs.reduce((s,inv)=>s+inv.items.reduce((a,it)=>{const p=products.find(p=>p.name===it.name);return a+(p?.costPrice||0)*(+it.qty||0);},0),0);
+    const grossProfit=revenue-cogs;
+    const margin=revenue>0?(grossProfit/revenue)*100:0;
+    return{label:MONTH_SHORT[mIdx],fullLabel:MONTH_NAMES[mIdx]+" "+yr,revenue,gst,cogs,grossProfit,margin,invoiceCount:invs.length,mIdx,yr};
+  });
+
+  const annual=monthlyData.reduce((a,m)=>({revenue:a.revenue+m.revenue,gst:a.gst+m.gst,cogs:a.cogs+m.cogs,grossProfit:a.grossProfit+m.grossProfit,invoiceCount:a.invoiceCount+m.invoiceCount}),{revenue:0,gst:0,cogs:0,grossProfit:0,invoiceCount:0});
+  const annualMargin=annual.revenue>0?(annual.grossProfit/annual.revenue)*100:0;
+  const maxRev=Math.max(...monthlyData.map(m=>Math.max(m.revenue,m.grossProfit<0?-m.grossProfit:m.grossProfit)),1);
+  const selected=selMonth!==null?monthlyData[selMonth]:null;
+
+  return(
+    <div className="scroll-area" style={{flex:1,overflowY:"auto",padding:"16px 14px 80px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+        <h2 style={{fontSize:18,fontWeight:700,color:C.text}}>📈 Profit & Loss</h2>
+        <span style={{fontSize:12,color:C.muted,marginLeft:"auto"}}>FY {year}-{String(year+1).slice(2)}</span>
+      </div>
+
+      {/* Annual summary */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+        {[
+          {icon:"💰",label:"Total Revenue",val:`₹${fmt(annual.revenue)}`,color:C.navy},
+          {icon:"📦",label:"Total COGS",val:`₹${fmt(annual.cogs)}`,color:C.purple},
+          {icon:"✅",label:"Gross Profit",val:`₹${fmt(annual.grossProfit)}`,color:annual.grossProfit>=0?C.green:C.red},
+          {icon:"📊",label:"Profit Margin",val:`${annualMargin.toFixed(1)}%`,color:annualMargin>20?C.green:annualMargin>10?C.saffron:C.red},
+          {icon:"🏛",label:"GST Collected",val:`₹${fmt(annual.gst)}`,color:C.blue},
+          {icon:"🧾",label:"Total Invoices",val:annual.invoiceCount,color:C.text},
+        ].map(s=>(
+          <Card key={s.label} style={{padding:"12px 14px",borderLeft:`4px solid ${s.color}`}}>
+            <div style={{fontSize:18,marginBottom:4}}>{s.icon}</div>
+            <div style={{fontSize:15,fontWeight:700,color:s.color}}>{s.val}</div>
+            <div style={{fontSize:11,color:C.muted,marginTop:2}}>{s.label}</div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Monthly chart */}
+      <Card style={{padding:"14px 14px",marginBottom:14}}>
+        <div style={{fontWeight:700,fontSize:14,marginBottom:12}}>Monthly Overview</div>
+        <div style={{display:"flex",gap:2,alignItems:"flex-end",height:80,marginBottom:6}}>
+          {monthlyData.map((m,i)=>(
+            <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:1,cursor:"pointer"}} onClick={()=>setSelMonth(selMonth===i?null:i)}>
+              <div style={{width:"80%",display:"flex",flexDirection:"column",gap:1,alignItems:"center",justifyContent:"flex-end",height:72}}>
+                <div style={{width:"100%",background:m.grossProfit>=0?C.green:C.red,height:Math.max(2,m.revenue>0?(Math.abs(m.grossProfit)/maxRev*60):0),borderRadius:"3px 3px 0 0",opacity:selMonth===i?1:0.7}}/>
+                <div style={{width:"100%",background:C.navy,height:Math.max(2,m.cogs/maxRev*60),borderRadius:"3px 3px 0 0",opacity:selMonth===i?1:0.5}}/>
+              </div>
+              <div style={{fontSize:8,color:selMonth===i?C.navy:C.muted,fontWeight:selMonth===i?700:400}}>{m.label}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:12,fontSize:10,color:C.muted,justifyContent:"center"}}>
+          <span><span style={{display:"inline-block",width:8,height:8,background:C.navy,borderRadius:2,marginRight:3}}/>COGS</span>
+          <span><span style={{display:"inline-block",width:8,height:8,background:C.green,borderRadius:2,marginRight:3}}/>Profit</span>
+        </div>
+      </Card>
+
+      {/* Month detail */}
+      {selected&&(
+        <Card style={{padding:"14px 14px",marginBottom:14}}>
+          <div style={{fontWeight:700,fontSize:14,marginBottom:12,color:C.navy}}>{selected.fullLabel} Detail</div>
+          {[
+            {label:"Revenue (ex-GST)",val:`₹${fmt(selected.revenue)}`,color:C.navy},
+            {label:"Cost of Goods",val:`₹${fmt(selected.cogs)}`,color:C.purple},
+            {label:"Gross Profit",val:`₹${fmt(selected.grossProfit)}`,color:selected.grossProfit>=0?C.green:C.red},
+            {label:"Profit Margin",val:`${selected.margin.toFixed(1)}%`,color:selected.margin>20?C.green:selected.margin>10?C.saffron:C.red},
+            {label:"GST Collected",val:`₹${fmt(selected.gst)}`,color:C.blue},
+            {label:"Invoices",val:selected.invoiceCount,color:C.text},
+          ].map(r=>(
+            <div key={r.label} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}>
+              <span style={{color:C.muted}}>{r.label}</span>
+              <span style={{fontWeight:700,color:r.color}}>{r.val}</span>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {/* Monthly table */}
+      <Card style={{overflowX:"auto"}}>
+        <div style={{minWidth:400,overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse"}}>
+            <thead><tr style={{background:"#faf8f4"}}>
+              {["Month","Revenue","Profit","Margin","Bills"].map(h=>(
+                <th key={h} style={{padding:"8px 10px",textAlign:h==="Month"?"left":"right",fontSize:10,color:C.muted,fontWeight:700,textTransform:"uppercase"}}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {monthlyData.map((m,i)=>(
+                <tr key={i} style={{borderTop:`1px solid ${C.border}`,background:selMonth===i?"#f0f7ff":"#fff",cursor:"pointer"}} onClick={()=>setSelMonth(selMonth===i?null:i)}>
+                  <td style={{padding:"8px 10px",fontSize:12,fontWeight:600}}>{m.fullLabel}</td>
+                  <td style={{padding:"8px 10px",fontSize:12,textAlign:"right"}}>{m.revenue>0?`₹${fmt(m.revenue)}`:"—"}</td>
+                  <td style={{padding:"8px 10px",fontSize:12,textAlign:"right",fontWeight:600,color:m.grossProfit>=0?C.green:C.red}}>{m.revenue>0?`₹${fmt(m.grossProfit)}`:"—"}</td>
+                  <td style={{padding:"8px 10px",fontSize:12,textAlign:"right"}}>{m.revenue>0?<Badge color={m.margin>20?C.green:m.margin>10?C.saffron:C.red} bg={m.margin>20?"#d1fae5":m.margin>10?"#fef3c7":"#fef2f2"}>{m.margin.toFixed(1)}%</Badge>:"—"}</td>
+                  <td style={{padding:"8px 10px",fontSize:12,textAlign:"right",color:C.muted}}>{m.invoiceCount||"—"}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr style={{background:C.navy,color:"#fff"}}>
+                <td style={{padding:"8px 10px",fontSize:12,fontWeight:700}}>FY Total</td>
+                <td style={{padding:"8px 10px",fontSize:12,textAlign:"right",fontWeight:700}}>₹{fmt(annual.revenue)}</td>
+                <td style={{padding:"8px 10px",fontSize:12,textAlign:"right",fontWeight:700,color:annual.grossProfit>=0?"#a7f3d0":"#fca5a5"}}>₹{fmt(annual.grossProfit)}</td>
+                <td style={{padding:"8px 10px",fontSize:12,textAlign:"right",fontWeight:700,color:"#fde68a"}}>{annualMargin.toFixed(1)}%</td>
+                <td style={{padding:"8px 10px",fontSize:12,textAlign:"right"}}>{annual.invoiceCount}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+// ── SETTINGS PAGE ─────────────────────────────────────────────────────
+function Settings({invoices,products,customers,expenses,saveInv,saveProd,saveCust,setView}){
+  function exportBackup(){
+    const data={version:4,exportedAt:new Date().toISOString(),invoices,products,customers,expenses};
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download=`bharat-electricals-backup-${today()}.json`;
+    a.click();URL.revokeObjectURL(url);
+  }
+  function importBackup(){
+    const input=document.createElement("input");
+    input.type="file";input.accept=".json";
+    input.onchange=e=>{
+      const file=e.target.files[0];if(!file)return;
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        try{
+          const data=JSON.parse(ev.target.result);
+          if(!data.invoices||!data.products){alert("Invalid backup file.");return;}
+          if(!window.confirm(`Restore backup from ${data.exportedAt?.slice(0,10)||"unknown date"}?\n\nInvoices: ${data.invoices.length}\nProducts: ${data.products.length}\nCustomers: ${(data.customers||[]).length}\n\nThis will REPLACE all current data.`))return;
+          saveInv(data.invoices||[]);
+          saveProd(data.products||[]);
+          saveCust(data.customers||[]);
+          alert("✅ Backup restored!");
+        }catch(err){alert("Failed to read backup file.");}
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }
+
+  return(
+    <div className="scroll-area" style={{flex:1,overflowY:"auto",padding:"16px 14px 80px"}}>
+      <h2 style={{fontSize:18,fontWeight:700,color:C.text,marginBottom:16}}>⚙️ More</h2>
+
+      {/* Quick Links */}
+      <Card style={{padding:"16px 16px",marginBottom:12}}>
+        <div style={{fontWeight:700,fontSize:14,marginBottom:12,color:C.navy}}>🔗 Quick Links</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          <Btn variant="ghost" onClick={()=>setView("products")}>🔌 Products</Btn>
+          <Btn variant="ghost" onClick={()=>setView("customers")}>👥 Customers</Btn>
+        </div>
+      </Card>
+
+      {/* Shop Info */}
+      <Card style={{padding:"16px 16px",marginBottom:12}}>
+        <div style={{fontWeight:700,fontSize:14,marginBottom:12,color:C.navy}}>🏪 Shop Information</div>
+        {[
+          {label:"Name",val:SHOP.name},
+          {label:"GSTIN",val:SHOP.gstin},
+          {label:"Address",val:SHOP.address},
+          {label:"City",val:SHOP.city},
+          {label:"Phones",val:SHOP.phones.join(", ")},
+          {label:"State",val:`${SHOP.state} (${SHOP.stateCode})`},
+        ].map(r=>(
+          <div key={r.label} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${C.border}`,fontSize:13}}>
+            <span style={{color:C.muted,fontWeight:500}}>{r.label}</span>
+            <span style={{fontWeight:600,textAlign:"right",maxWidth:"60%"}}>{r.val}</span>
+          </div>
+        ))}
+      </Card>
+
+      {/* Data */}
+      <Card style={{padding:"16px 16px",marginBottom:12}}>
+        <div style={{fontWeight:700,fontSize:14,marginBottom:12,color:C.navy}}>💾 Data Management</div>
+        <div style={{fontSize:12,color:C.muted,marginBottom:12,lineHeight:1.5}}>
+          All your data is stored on this device. Export a backup regularly to prevent data loss.
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          <Btn variant="navy" onClick={exportBackup}>💾 Export Backup</Btn>
+          <Btn variant="ghost" onClick={importBackup}>📂 Restore Backup</Btn>
+        </div>
+        <div style={{marginTop:12,fontSize:12,color:C.muted}}>
+          <div>📊 {invoices.length} invoices | 📦 {products.length} products | 👥 {customers.length} customers | 💸 {(expenses||[]).length} expenses</div>
+        </div>
+      </Card>
+
+      {/* Install PWA */}
+      <Card style={{padding:"16px 16px",marginBottom:12}}>
+        <div style={{fontWeight:700,fontSize:14,marginBottom:8,color:C.navy}}>📱 Install as App (Homescreen)</div>
+        <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:10}}>
+          <b style={{color:C.text}}>Android:</b> Tap ⋮ menu → "Add to Home Screen" or "Install App"<br/>
+          <b style={{color:C.text}}>iPhone/iPad:</b> Tap Share (□↑) → "Add to Home Screen"
+        </div>
+        <div style={{fontSize:12,color:C.green,fontWeight:600}}>✅ Works offline once installed!</div>
+      </Card>
+    </div>
+  );
+}
+
+// ── EXPENSE TRACKER ───────────────────────────────────────────────────
+function ExpensePage({expenses,saveExpenses}){
+  const [showAdd,setShowAdd]=useState(false);
+  const [form,setForm]=useState({date:today(),category:"Purchase",amount:"",note:""});
+  const [filterMonth,setFilterMonth]=useState(new Date().getMonth());
+  const [filterYear,setFilterYear]=useState(new Date().getFullYear());
+  const CATS=["Purchase","Rent","Salary","Electricity","Transport","Repair","Other"];
+
+  const now=new Date();
+  const months=Array.from({length:12},(_,i)=>({value:i,label:MONTH_NAMES[i]}));
+  const years=[now.getFullYear()-1,now.getFullYear()];
+
+  const filtered=expenses.filter(e=>{const d=new Date(e.date);return d.getMonth()===filterMonth&&d.getFullYear()===filterYear;})
+    .sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const total=filtered.reduce((s,e)=>s+(+e.amount||0),0);
+
+  // Category breakdown
+  const catTotals={};
+  filtered.forEach(e=>{if(!catTotals[e.category])catTotals[e.category]=0;catTotals[e.category]+=+e.amount||0;});
+
+  function addExpense(){
+    if(!form.amount||!form.date){alert("Date and amount required.");return;}
+    const newE={id:uid(),...form,amount:+form.amount,createdAt:new Date().toISOString()};
+    saveExpenses([...expenses,newE]);
+    setForm({date:today(),category:"Purchase",amount:"",note:""});
+    setShowAdd(false);
+  }
+  function del(id){if(window.confirm("Delete this expense?"))saveExpenses(expenses.filter(e=>e.id!==id));}
+
+  const CAT_COLORS={Purchase:C.purple,Rent:C.red,Salary:C.blue,Electricity:C.saffron,Transport:C.green,Repair:C.navy,Other:C.muted};
+
+  return(
+    <div className="scroll-area" style={{flex:1,overflowY:"auto",padding:"16px 14px 80px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+        <h2 style={{fontSize:18,fontWeight:700,color:C.text}}>💸 Expenses</h2>
+        <Btn small onClick={()=>setShowAdd(true)} style={{marginLeft:"auto"}}>+ Add</Btn>
+      </div>
+
+      {/* Month filter */}
+      <div style={{display:"flex",gap:8,marginBottom:14}}>
+        <select value={filterMonth} onChange={e=>setFilterMonth(+e.target.value)}
+          style={{flex:2,border:`1px solid ${C.border}`,borderRadius:8,padding:"9px 10px",fontSize:13,background:"#fff",outline:"none"}}>
+          {months.map(m=><option key={m.value} value={m.value}>{m.label}</option>)}
+        </select>
+        <select value={filterYear} onChange={e=>setFilterYear(+e.target.value)}
+          style={{flex:1,border:`1px solid ${C.border}`,borderRadius:8,padding:"9px 10px",fontSize:13,background:"#fff",outline:"none"}}>
+          {years.map(y=><option key={y}>{y}</option>)}
+        </select>
+      </div>
+
+      {/* Total */}
+      <div style={{background:`linear-gradient(135deg,${C.navy},${C.navyL})`,borderRadius:14,padding:"16px 18px",marginBottom:14,boxShadow:"0 4px 16px rgba(15,31,61,0.2)"}}>
+        <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",fontWeight:600,letterSpacing:1,marginBottom:4}}>TOTAL EXPENSES — {MONTH_NAMES[filterMonth].toUpperCase()} {filterYear}</div>
+        <div style={{fontSize:28,fontWeight:800,color:"#fff"}}>₹{fmt(total)}</div>
+        <div style={{fontSize:12,color:C.saffronL,marginTop:2}}>{filtered.length} entries</div>
+      </div>
+
+      {/* Category breakdown */}
+      {Object.keys(catTotals).length>0&&(
+        <Card style={{padding:"12px 14px",marginBottom:14}}>
+          <div style={{fontWeight:700,fontSize:13,marginBottom:10,color:C.navy}}>By Category</div>
+          {Object.entries(catTotals).sort((a,b)=>b[1]-a[1]).map(([cat,amt])=>(
+            <div key={cat} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+              <div style={{width:10,height:10,borderRadius:"50%",background:CAT_COLORS[cat]||C.muted,flexShrink:0}}/>
+              <span style={{fontSize:13,flex:1,color:C.text}}>{cat}</span>
+              <span style={{fontSize:13,fontWeight:700,color:CAT_COLORS[cat]||C.muted}}>₹{fmt(amt)}</span>
+              <div style={{width:60,height:6,background:C.border,borderRadius:3,overflow:"hidden"}}>
+                <div style={{height:"100%",background:CAT_COLORS[cat]||C.muted,width:`${(amt/total*100)}%`,borderRadius:3}}/>
+              </div>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {/* List */}
+      {filtered.length===0
+        ?<div style={{textAlign:"center",color:C.muted,padding:40}}>
+            <div style={{fontSize:32,marginBottom:8}}>💸</div>
+            <div style={{fontSize:13}}>No expenses this month</div>
+          </div>
+        :filtered.map(e=>(
+          <Card key={e.id} style={{padding:"12px 14px",marginBottom:8}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+              <div>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                  <span style={{background:(CAT_COLORS[e.category]||C.muted)+"18",color:CAT_COLORS[e.category]||C.muted,fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:10}}>{e.category}</span>
+                  <span style={{fontSize:11,color:C.muted}}>{new Date(e.date).toLocaleDateString("en-IN")}</span>
+                </div>
+                {e.note&&<div style={{fontSize:13,color:C.text}}>{e.note}</div>}
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{fontWeight:800,fontSize:15,color:C.red}}>₹{fmt(e.amount)}</div>
+                <button onClick={()=>del(e.id)} style={{background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:15}}>🗑</button>
+              </div>
+            </div>
+          </Card>
+        ))
+      }
+
+      {showAdd&&(
+        <Modal title="➕ Add Expense" onClose={()=>setShowAdd(false)}>
+          <div style={{display:"grid",gap:12}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <div><Label>Date</Label><Input value={form.date} onChange={v=>setForm(f=>({...f,date:v}))} type="date"/></div>
+              <div><Label>Amount ₹</Label><Input value={form.amount} onChange={v=>setForm(f=>({...f,amount:v}))} type="number" placeholder="0" autoFocus/></div>
+            </div>
+            <div>
+              <Label>Category</Label>
+              <select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}
+                style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 10px",fontSize:14,background:"#fff",outline:"none"}}>
+                {CATS.map(c=><option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <div><Label>Note (optional)</Label><Input value={form.note} onChange={v=>setForm(f=>({...f,note:v}))} placeholder="e.g. Paid rent to landlord"/></div>
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:16}}>
+            <Btn variant="ghost" onClick={()=>setShowAdd(false)} style={{flex:1}}>Cancel</Btn>
+            <Btn variant="primary" onClick={addExpense} style={{flex:1}}>💾 Save</Btn>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── KHATA / LEDGER PAGE ───────────────────────────────────────────────
+function KhataPage({customers,invoices,saveInvoices}){
+  const [selCust,setSelCust]=useState(null);
+  const [search,setSearch]=useState("");
+  const [showPayModal,setShowPayModal]=useState(false);
+  const [payAmt,setPayAmt]=useState("");
+  const [payNote,setPayNote]=useState("");
+
+  // Build ledger entries per customer
+  function getCustLedger(c){
+    const invs=invoices.filter(i=>i.customer?.mobile===c.mobile&&i.customer?.mobile);
+    const balance=invs.filter(i=>i.status!=="paid").reduce((s,i)=>s+(i.grandTotal-(i.paidAmt||0)),0);
+    return{invs,balance};
+  }
+
+  const custWithDues=customers
+    .map(c=>({...c,...getCustLedger(c)}))
+    .filter(c=>c.invs.length>0||c.balance>0)
+    .filter(c=>!search||c.name.toLowerCase().includes(search.toLowerCase())||c.mobile.includes(search))
+    .sort((a,b)=>b.balance-a.balance);
+
+  const totalDue=custWithDues.reduce((s,c)=>s+c.balance,0);
+
+  function recordPayment(){
+    if(!payAmt||+payAmt<=0){alert("Enter payment amount.");return;}
+    const amt=+payAmt;
+    // Apply payment to oldest unpaid invoices first
+    let remaining=amt;
+    const updated=invoices.map(inv=>{
+      if(inv.customer?.mobile!==selCust.mobile||remaining<=0)return inv;
+      if(inv.status==="paid")return inv;
+      const due=inv.grandTotal-(inv.paidAmt||0);
+      if(due<=0)return inv;
+      if(remaining>=due){remaining-=due;return{...inv,status:"paid",paidAmt:inv.grandTotal};}
+      else{const paid=(inv.paidAmt||0)+remaining;remaining=0;return{...inv,status:"partial",paidAmt:paid};}
+    });
+    saveInvoices(updated);
+    setShowPayModal(false);setPayAmt("");setPayNote("");
+    alert(`✅ Payment of ₹${fmt(amt)} recorded for ${selCust.name}`);
+    setSelCust(null);
+  }
+
+  if(selCust){
+    const{invs,balance}=getCustLedger(selCust);
+    return(
+      <div className="scroll-area" style={{flex:1,overflowY:"auto",padding:"16px 14px 80px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+          <button onClick={()=>setSelCust(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,color:C.navy}}>←</button>
+          <div>
+            <h2 style={{fontSize:17,fontWeight:700,color:C.text}}>{selCust.name}</h2>
+            <div style={{fontSize:12,color:C.muted}}>📞 {selCust.mobile}</div>
+          </div>
+          <div style={{marginLeft:"auto"}}>
+            {balance>0&&<Btn small variant="green" onClick={()=>setShowPayModal(true)}>💰 Collect</Btn>}
+          </div>
+        </div>
+
+        {/* Balance card */}
+        <div style={{background:balance>0?`linear-gradient(135deg,${C.red},#ef4444)`:`linear-gradient(135deg,${C.green},#10b981)`,borderRadius:14,padding:"16px 18px",marginBottom:14,boxShadow:"0 4px 16px rgba(0,0,0,0.15)"}}>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.65)",fontWeight:600,letterSpacing:1,marginBottom:4}}>OUTSTANDING BALANCE</div>
+          <div style={{fontSize:28,fontWeight:800,color:"#fff"}}>₹{fmt(balance)}</div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.7)",marginTop:2}}>{invs.length} invoices total</div>
+        </div>
+
+        {/* WhatsApp reminder */}
+        {balance>0&&(
+          <Card style={{padding:"12px 14px",marginBottom:14}}>
+            <div style={{fontWeight:700,fontSize:13,marginBottom:8}}>📱 Send Reminder</div>
+            <button onClick={()=>{const msg=`Namaste ${selCust.name} ji! 🙏\n\n${SHOP.name} se aapka outstanding balance hai:\n*₹${fmt(balance)}*\n\nKripya jald se jald bhugtan karein.\n\nDhanyawad! 🙏`;window.open(`https://wa.me/${selCust.mobile?.replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`,"_blank");}}
+              style={{width:"100%",background:"#25D366",border:"none",borderRadius:8,padding:"10px",cursor:"pointer",color:"#fff",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+              💬 Send WhatsApp Reminder
+            </button>
+          </Card>
+        )}
+
+        {/* Invoice history */}
+        <div style={{fontWeight:700,fontSize:13,marginBottom:8,color:C.navy}}>Invoice History</div>
+        {invs.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(inv=>(
+          <Card key={inv.id} style={{padding:"12px 14px",marginBottom:8,borderLeft:`4px solid ${inv.status==="paid"?C.green:inv.status==="partial"?C.saffron:C.red}`}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontWeight:600,fontSize:13,color:C.navy}}>{inv.no}</div>
+                <div style={{fontSize:11,color:C.muted}}>{new Date(inv.date).toLocaleDateString("en-IN")}</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontWeight:700,fontSize:14}}>₹{fmt(inv.grandTotal)}</div>
+                <StatusBadge status={inv.status}/>
+              </div>
+            </div>
+            {inv.status==="partial"&&<div style={{fontSize:11,color:C.saffron,marginTop:4}}>Paid: ₹{fmt(inv.paidAmt||0)} | Due: ₹{fmt(inv.grandTotal-(inv.paidAmt||0))}</div>}
+          </Card>
+        ))}
+
+        {showPayModal&&(
+          <Modal title="💰 Record Payment" onClose={()=>setShowPayModal(false)}>
+            <div style={{marginBottom:4,fontSize:13,color:C.muted}}>Outstanding: <b style={{color:C.red}}>₹{fmt(balance)}</b></div>
+            <div style={{marginBottom:12}}><Label>Amount Received ₹</Label><Input value={payAmt} onChange={setPayAmt} type="number" placeholder="0" autoFocus/></div>
+            <div style={{marginBottom:16}}><Label>Note (optional)</Label><Input value={payNote} onChange={setPayNote} placeholder="e.g. Cash payment"/></div>
+            <div style={{display:"flex",gap:8}}>
+              <Btn variant="ghost" onClick={()=>setShowPayModal(false)} style={{flex:1}}>Cancel</Btn>
+              <Btn variant="green" onClick={recordPayment} style={{flex:1}}>✅ Record</Btn>
+            </div>
+          </Modal>
+        )}
+      </div>
+    );
+  }
+
+  return(
+    <div className="scroll-area" style={{flex:1,overflowY:"auto",padding:"16px 14px 80px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+        <h2 style={{fontSize:18,fontWeight:700,color:C.text}}>📒 Khata / Ledger</h2>
+      </div>
+
+      {/* Total dues */}
+      <div style={{background:`linear-gradient(135deg,${C.red},#ef4444)`,borderRadius:14,padding:"16px 18px",marginBottom:14,boxShadow:"0 4px 16px rgba(220,38,38,0.25)"}}>
+        <div style={{fontSize:11,color:"rgba(255,255,255,0.65)",fontWeight:600,letterSpacing:1,marginBottom:4}}>TOTAL OUTSTANDING DUES</div>
+        <div style={{fontSize:28,fontWeight:800,color:"#fff"}}>₹{fmt(totalDue)}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.7)",marginTop:2}}>{custWithDues.filter(c=>c.balance>0).length} customers have dues</div>
+      </div>
+
+      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search customers…"
+        style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:8,padding:"9px 12px",fontSize:13,outline:"none",background:"#fff",marginBottom:12}}/>
+
+      {custWithDues.length===0
+        ?<div style={{textAlign:"center",color:C.muted,padding:40}}>
+            <div style={{fontSize:32,marginBottom:8}}>✅</div>
+            <div style={{fontSize:13}}>No outstanding dues!</div>
+          </div>
+        :custWithDues.map(c=>(
+          <Card key={c.id} style={{padding:"12px 14px",marginBottom:8,cursor:"pointer",borderLeft:`4px solid ${c.balance>0?C.red:C.green}`}} onClick={()=>setSelCust(c)}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontWeight:700,fontSize:14}}>{c.name}</div>
+                <div style={{fontSize:12,color:C.muted}}>📞 {c.mobile} • {c.invs.length} invoices</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontWeight:800,fontSize:15,color:c.balance>0?C.red:C.green}}>₹{fmt(c.balance)}</div>
+                <div style={{fontSize:10,color:c.balance>0?C.red:C.green,fontWeight:600}}>{c.balance>0?"DUE":"CLEAR"}</div>
+              </div>
+            </div>
+          </Card>
+        ))
+      }
+    </div>
+  );
+}
+
+// ── MAIN APP ──────────────────────────────────────────────────────────
+function App(){
+  const [view,setView]=useState("dashboard");
+  const [invoices,setInvoices]=useState([]);
+  const [products,setProducts]=useState(INIT_PRODUCTS);
+  const [customers,setCustomers]=useState([]);
+  const [expenses,setExpenses]=useState([]);
+  const [viewInv,setViewInv]=useState(null);
+  const [loaded,setLoaded]=useState(false);
+  const [showAI,setShowAI]=useState(false);
+
+  useEffect(()=>{
+    try{
+      const i=db.get("be2_inv");
+      const p=db.get("be2_prod");
+      const c=db.get("be2_cust");
+      const e=db.get("be2_exp");
+      if(i)setInvoices(i);
+      if(p)setProducts(p);
+      if(c)setCustomers(c);
+      if(e)setExpenses(e);
+    }catch{}
+    setLoaded(true);
+  },[]);
+
+  const saveInv=d=>{setInvoices(d);db.set("be2_inv",d);};
+  const saveProd=d=>{setProducts(d);db.set("be2_prod",d);};
+  const saveCust=d=>{setCustomers(d);db.set("be2_cust",d);};
+  const saveExp=d=>{setExpenses(d);db.set("be2_exp",d);};
+
+  if(!loaded){
+    return(
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:C.navy,flexDirection:"column",gap:12}}>
+        <div style={{fontSize:48,filter:"drop-shadow(0 0 20px rgba(245,158,11,0.5))"}}>⚡</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.4)"}}>Loading…</div>
+      </div>
+    );
+  }
+
+  const lowCount=products.filter(p=>(p.stock||0)<10).length;
+  const totalDue=customers.map(c=>{
+    return invoices.filter(i=>i.customer?.mobile===c.mobile&&i.status!=="paid").reduce((s,i)=>s+(i.grandTotal-(i.paidAmt||0)),0);
+  }).reduce((a,b)=>a+b,0);
+
+  const NAV=[
+    {id:"dashboard",icon:"📊",label:"Home"},
+    {id:"new-invoice",icon:"➕",label:"Invoice"},
+    {id:"invoices",icon:"🧾",label:"Bills"},
+    {id:"khata",icon:"📒",label:"Khata"},
+    {id:"stock",icon:"📦",label:"Stock"},
+    {id:"expenses",icon:"💸",label:"Expense"},
+    {id:"pnl",icon:"📈",label:"P&L"},
+    {id:"settings",icon:"⚙️",label:"More"},
+  ];
+
+  const activeNav=view==="view-invoice"?"invoices":view==="products"?"settings":view==="customers"?"settings":view;
+
+  return(
+    <div id="app-shell" style={{display:"flex",flexDirection:"column",height:"100vh",background:C.bg,overflow:"hidden"}}>
+      {/* Top bar */}
+      <div style={{background:C.navy,padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0,paddingTop:`calc(10px + env(safe-area-inset-top))`}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:20}}>⚡</span>
+          <div>
+            <div style={{fontSize:13,fontWeight:700,color:"#fff",lineHeight:1.2}}>Bharat Electricals</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>{SHOP.city}</div>
+          </div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          {lowCount>0&&<div style={{background:C.red,color:"#fff",borderRadius:12,padding:"2px 8px",fontSize:11,fontWeight:700}}>⚠️ {lowCount}</div>}
+          {totalDue>0&&<div style={{background:C.saffron,color:"#fff",borderRadius:12,padding:"2px 8px",fontSize:11,fontWeight:700}}>₹{fmtI(Math.round(totalDue/1000))}k due</div>}
+          <button onClick={()=>setShowAI(true)}
+            style={{background:`linear-gradient(135deg, ${C.saffron}, ${C.saffronL})`,border:"none",borderRadius:20,padding:"6px 12px",cursor:"pointer",color:"#fff",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:4}}>
+            ✨ AI
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{flex:1,display:"flex",overflow:"hidden"}}>
+        {view==="dashboard"&&<Dashboard invoices={invoices} products={products} customers={customers} expenses={expenses} setView={setView} setViewInv={setViewInv}/>}
+        {view==="new-invoice"&&<NewInvoice invoices={invoices} products={products} customers={customers} saveInv={saveInv} saveProd={saveProd} saveCust={saveCust} setView={setView}/>}
+        {view==="invoices"&&<Invoices invoices={invoices} saveInv={saveInv} setViewInv={setViewInv} setView={setView}/>}
+        {view==="stock"&&<StockPage products={products} saveProd={saveProd}/>}
+        {view==="products"&&<Products products={products} saveProd={saveProd}/>}
+        {view==="customers"&&<Customers customers={customers} saveCust={saveCust} invoices={invoices}/>}
+        {view==="khata"&&<KhataPage customers={customers} invoices={invoices} saveInvoices={saveInv}/>}
+        {view==="expenses"&&<ExpensePage expenses={expenses} saveExpenses={saveExp}/>}
+        {view==="pnl"&&<ProfitLoss invoices={invoices} products={products}/>}
+        {view==="settings"&&<Settings invoices={invoices} products={products} customers={customers} expenses={expenses} saveInv={saveInv} saveProd={saveProd} saveCust={saveCust} setView={setView}/>}
+        {view==="view-invoice"&&viewInv&&<ViewInvoice inv={viewInv} setView={setView} saveInv={saveInv} invoices={invoices}/>}
+      </div>
+
+      {/* Bottom Nav */}
+      <div style={{background:"#fff",borderTop:`1px solid ${C.border}`,display:"flex",flexShrink:0,paddingBottom:`env(safe-area-inset-bottom)`,overflowX:"auto"}}>
+        {NAV.map(n=>{
+          const active=activeNav===n.id;
+          const badge=n.id==="stock"&&lowCount>0?lowCount:n.id==="khata"&&totalDue>0?"!":null;
+          return(
+            <button key={n.id} onClick={()=>setView(n.id)}
+              style={{flex:1,minWidth:44,padding:"8px 2px 6px",border:"none",background:"transparent",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,position:"relative"}}>
+              <span style={{fontSize:17,lineHeight:1}}>{n.icon}</span>
+              <span style={{fontSize:9,fontWeight:active?700:400,color:active?C.saffron:C.muted,lineHeight:1,whiteSpace:"nowrap"}}>{n.label}</span>
+              {active&&<div style={{position:"absolute",bottom:0,left:"20%",right:"20%",height:2,background:C.saffron,borderRadius:2}}/>}
+              {badge&&<div style={{position:"absolute",top:4,right:"15%",background:C.red,color:"#fff",borderRadius:8,fontSize:9,padding:"1px 4px",fontWeight:700,lineHeight:1}}>{badge}</div>}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* AI Assistant */}
+      {showAI&&<AIAssistant invoices={invoices} products={products} customers={customers} expenses={expenses} onClose={()=>setShowAI(false)}/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
